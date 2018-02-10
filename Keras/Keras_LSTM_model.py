@@ -1,6 +1,7 @@
 import tensorflow as tf
 import glove_embedding as embedding
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
+from keras.callbacks import CSVLogger
 from keras.layers import Dense, Input, LSTM, Dropout
 from keras.layers.core import Lambda
 from keras.layers.merge import concatenate, add, multiply
@@ -9,6 +10,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras import optimizers
+import numpy
 
 tf.flags.DEFINE_integer("lstm_out_dimantion", 100,
                        "Where the train data with computed features are stored.")
@@ -91,6 +93,16 @@ optimizer_nadam = optimizers.Nadam(lr=0.002)
 
 model.compile(loss="binary_crossentropy", optimizer=optimizer_nadam, metrics=['accuracy'])
 early_stopping = EarlyStopping(monitor="val_loss", patience=5)
+csv_logger = CSVLogger('training.log')
+logging = TensorBoard(log_dir='./logs',
+                      histogram_freq=0,
+                      batch_size=FLAGS.batch_size,
+                      write_graph=True,
+                      write_grads=False,
+                      write_images=False,
+                      embeddings_freq=0,
+                      embeddings_layer_names=None,
+                      embeddings_metadata=None)
 best_model_path = "best_model.h5"
 model_checkpoint = ModelCheckpoint(best_model_path,
                                    save_best_only=True,
@@ -99,10 +111,10 @@ model_checkpoint = ModelCheckpoint(best_model_path,
 history = model.fit([q1_train, q2_train],
                 labels_train,
                 validation_data=([q1_validation, q2_validation], labels_validation),
-                epochs=15,
+                epochs=FLAGS.number_epochs,
                 batch_size=FLAGS.batch_size,
                 shuffle=True,
-                callbacks=[early_stopping, model_checkpoint],
+                callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                 verbose=1)
 
 # evaluate model

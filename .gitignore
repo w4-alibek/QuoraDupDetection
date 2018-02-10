@@ -1,3 +1,7 @@
 Keras/glove.6B.50d.txt
 Keras/train.500.csv
 .idea/
+*log
+Keras/logs
+Keras/loss_history.txt
+Keras/*.h5
