@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-from Keras import utils
-from Keras import read_data
+import utils
+import read_data
 
 import pandas as pd
 import numpy as np

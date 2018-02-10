@@ -1,5 +1,5 @@
 import tensorflow as tf
-from Keras import glove_embedding as embedding
+import glove_embedding as embedding
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.layers import Dense, Input, LSTM, Dropout
 from keras.layers.core import Lambda
