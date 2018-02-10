@@ -10,23 +10,23 @@ from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras import optimizers
 
-tf.flags.DEFINE_string("lstm_out_dimantion", 100,
+tf.flags.DEFINE_integer("lstm_out_dimantion", 100,
                        "Where the train data with computed features are stored.")
-tf.flags.DEFINE_string("recurrent_dropout", 0.2,
+tf.flags.DEFINE_float("recurrent_dropout", 0.2,
                        "Where the word_to_id is stored.")
 tf.flags.DEFINE_string("raw_train_data", None,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("glove_embedding_data", None,
+tf.flags.DEFINE_string("glove_path", None,
                        "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_test_data", None,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("batch_size", 100,
+tf.flags.DEFINE_integer("batch_size", 100,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("max_sequence_length", 1000,
+tf.flags.DEFINE_integer("max_sequence_length", 1000,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("number_epochs", 15,
+tf.flags.DEFINE_integer("number_epochs", 15,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("glove_dimension", 50,
+tf.flags.DEFINE_integer("glove_dimension", 50,
                        "Where the raw train data is stored.")
 
 FLAGS = tf.flags.FLAGS
@@ -38,7 +38,7 @@ MAX_SEQUENCE_LENGTH = 1000
 BATCH_SIZE = 100
 
 embedding_layer, labels, question1s, question2s, tokenizer = embedding\
-    .process_data(FLAGS.glove_embedding_data,
+    .process_data(FLAGS.glove_path,
                   FLAGS.raw_train_data,
                   FLAGS.glove_dimension,
                   FLAGS.max_sequence_length)
