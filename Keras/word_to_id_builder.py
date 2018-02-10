@@ -16,7 +16,7 @@ quora_raw_data('train.csv', word_to_id)
 
 """
 
-import datasets
+from Keras import datasets
 
 def read_glove_words(words, filename):
     """Add words from glove to the dictionary
@@ -31,9 +31,9 @@ def read_quora_words(words, filename):
     question_index_1 = 3
     question_index_2 = 4
 
-    for row in datasets.quora_dataset(filename):
-        qwords = row[question_index_1].split()
-        qwords.extend(row[question_index_2].split())
+    for row in datasets.quora_dataset(False, filename, 'train'):
+        qwords = row[0][question_index_1].split()
+        qwords.extend(row[0][question_index_2].split())
 
         for word in qwords:
             if word:
@@ -68,10 +68,10 @@ def build_tokenized_samples(data_path, word_to_id, remove_stopwords):
 
     return samples
 
-def save_samples(samples):
-    """Save to disk
-    """
-    with open(filename, 'wb') as csv_file:
-        writer = csv.writer(csv_file)
-        for key, value in samples.items():
-            writer.writerow([key, value])
+words = {}
+TEXT_DATA_DIR = '/Users/skelter/Desktop/QuoraDupDetection/Keras/train.500.csv'
+GLOVE_DIR = '/Users/skelter/Desktop/QuoraDupDetection/Keras/glove.6B.50d.txt'
+read_quora_words(words, TEXT_DATA_DIR)
+read_glove_words(words, GLOVE_DIR)
+words = words
+
