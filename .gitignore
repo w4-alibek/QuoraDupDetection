@@ -1,10 +1,3 @@
-glove.6B.50d.txt
-glove.6B.100d.txt
-glove.6B.200d.txt
-glove.6B.300d.txt
-train.csv
-/tmp
-/testing
+Keras/glove.6B.50d.txt
+Keras/train.500.csv
 .idea/
-/preprocessed_data
-Training_Data_Collection
