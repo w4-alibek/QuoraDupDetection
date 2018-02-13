@@ -1,8 +1,11 @@
+"""Trains LSTM model with train.csv. How to run:
+python Keras_LSTM_model.py --raw_train_data ~chungshik/quora_data/data/train.csv --glove_path ~chungshik/quora_data/word_embeddings/glove.840B.300d.txt --glove_dimension 300 --batch_size 100
+"""
 import tensorflow as tf
 import glove_embedding as embedding
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.callbacks import CSVLogger
-from keras.layers import Dense, Input, LSTM, Dropout
+from keras.layers import Dense, Input, LSTM, Dropout, Bidirectional
 from keras.layers.core import Lambda
 from keras.layers.merge import concatenate, add, multiply
 from keras.layers.noise import GaussianNoise
@@ -19,25 +22,22 @@ tf.flags.DEFINE_float("recurrent_dropout", 0.2,
 tf.flags.DEFINE_string("raw_train_data", None,
                        "Where the raw train data is stored.")
 tf.flags.DEFINE_string("glove_path", None,
-                       "Where the raw train data is stored.")
+                       "Where the glove embedding data is stored.")
 tf.flags.DEFINE_string("raw_test_data", None,
-                       "Where the raw train data is stored.")
+                       "Where the raw test data is stored.")
 tf.flags.DEFINE_integer("batch_size", 100,
-                       "Where the raw train data is stored.")
+                       "Batch size.")
 tf.flags.DEFINE_integer("max_sequence_length", 1000,
-                       "Where the raw train data is stored.")
+                       "Maximum length of question length")
 tf.flags.DEFINE_integer("number_epochs", 15,
-                       "Where the raw train data is stored.")
+                       "Number of epochs to train")
 tf.flags.DEFINE_integer("glove_dimension", 50,
-                       "Where the raw train data is stored.")
+                       "Glove embedding dimension")
+tf.flags.DEFINE_string("model", "lstm",
+                       "Which model to use for training")
 
 FLAGS = tf.flags.FLAGS
-
-LSTM_OUT_D = 100
-RNN_DROPOUT = 0.2
 VALIDATION_SPLIT = 0.2
-MAX_SEQUENCE_LENGTH = 1000
-BATCH_SIZE = 100
 
 embedding_layer, labels, question1s, question2s, tokenizer = embedding\
     .process_data(FLAGS.glove_path,
@@ -46,6 +46,9 @@ embedding_layer, labels, question1s, question2s, tokenizer = embedding\
                   FLAGS.max_sequence_length)
 
 lstm_layer = LSTM(FLAGS.lstm_out_dimantion, recurrent_dropout=FLAGS.recurrent_dropout)
+
+if FLAGS.model == "bidirectional_lstm":
+    lstm_layer = Bidirectional(lstm_layer, merge_mode='concat')
 
 sequence_1_input = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
 embedded_sequences_1 = embedding_layer(sequence_1_input)

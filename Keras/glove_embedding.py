@@ -17,6 +17,11 @@ def process_data(glove_embedding_path, raw_train_data, EMBEDDING_DIM, MAX_SEQUEN
     train["question1"] = train["question1"].fillna("").apply(utils.clean_text)
     train["question2"] = train["question2"].fillna("").apply(utils.clean_text)
 
+    train["question1"] = train["question1"].fillna("")\
+        .apply(utils.remove_stop_words_and_punctuation)
+    train["question2"] = train["question2"].fillna("")\
+        .apply(utils.remove_stop_words_and_punctuation)
+
     labels = np.array(train["is_duplicate"])  # list of label ids
     question1_list = train["question1"]
     question2_list = train["question2"]

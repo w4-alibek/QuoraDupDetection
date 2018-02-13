@@ -4,4 +4,4 @@ Keras/train.500.csv
 *log
 Keras/logs
 Keras/loss_history.txt
-Keras/*.h5
+Keras/best_model.h5
