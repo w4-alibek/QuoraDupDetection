@@ -24,10 +24,13 @@ from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
+import pandas as pd
 import numpy
 import tensorflow as tf
 from collections import _count_elements
 from Keras import glove_embedding as embedding
+from Keras import util
+
 
 tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
 tf.flags.DEFINE_integer("max_sequence_length", 1000,
@@ -74,7 +77,7 @@ def build_lstm_layer():
         lstm_layer = LSTM(FLAGS.lstm_out_dimension, recurrent_dropout=FLAGS.zoneout)
     return lstm_layer
 
-def generate_padded_sequence (question1_list, question2_list, tokenizer):
+def generate_padded_sequence(question1_list, question2_list, tokenizer):
     sequences1 = tokenizer.texts_to_sequences(question1_list)
     sequences2 = tokenizer.texts_to_sequences(question2_list)
 
@@ -91,6 +94,10 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
     merged = multiply([merged, merged])
 
     merged = concatenate([merged, addition])
+    merged = Dropout(0.4)(merged)
+    merged = BatchNormalization()(merged)
+    merged = GaussianNoise(0.1)(merged)
+
     out = Dense(1, activation="sigmoid")(merged)
     model = Model(inputs=[input_sequence_1, input_sequence_2], outputs=out)
 
@@ -175,39 +182,46 @@ def main():
     lstm_layer_lhs = lstm_layer(embedded_sequences_1)
     lstm_layer_rhs = lstm_layer(embedded_sequences_2)
 
-    data_1, data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
+    train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
+
+    # Read test data and do same for test data.
+    test = pd.read_csv(FLAGS.raw_test_data)
+    test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
+        .apply(util.remove_stop_words_and_punctuation)
+    test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
+        .apply(util.remove_stop_words_and_punctuation)
+
+    test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
+                                                        test["question2"],
+                                                        tokenizer)
 
     # Split the data into a training set and a validation set.
     VALIDATION_SPLIT = 0.2
-    num_validation_samples = int(VALIDATION_SPLIT * data_1.shape[0])
-
-    q1_train = data_1[:-num_validation_samples]
-    q2_train = data_2[:-num_validation_samples]
-    labels_train = labels[:-num_validation_samples]
-
-    count0 = 0;
-    count1 = 0;
-    for i in labels_train:
-        if i == 0:
-            count0 = count0 + 1
-        else:
-            count1 = count1 + 1
-    print(count0,count1)
+    num_validation_samples = int(VALIDATION_SPLIT * test_data_1.shape[0])
 
     train_set = [
-        data_1[:-num_validation_samples],
-        data_2[:-num_validation_samples],
+        train_data_1[:-num_validation_samples],
+        train_data_2[:-num_validation_samples],
         labels[:-num_validation_samples]
     ]
     validation_set = [
-        data_1[-num_validation_samples:],
-        data_2[-num_validation_samples:],
+        train_data_1[-num_validation_samples:],
+        train_data_2[-num_validation_samples:],
         labels[-num_validation_samples:]
     ]
 
     # Building and Training a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
     train(model, train_set, validation_set)
+
+
+    # Testing and generating submission csv
+    print("Read test.csv file...")
+    preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
+                          verbose=1)
+
+    submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
+    submission.to_csv("predictions/preds" + ".csv", index=False)
 
 if __name__ == "__main__":
     main()
