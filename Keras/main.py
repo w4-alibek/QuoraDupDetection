@@ -221,7 +221,7 @@ def main():
                           verbose=1)
 
     submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
-    submission.to_csv("predictions/preds" + ".csv", index=False)
+    submission.to_csv("preds" + ".csv", index=False)
 
 if __name__ == "__main__":
     main()
