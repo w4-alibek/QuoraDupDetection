@@ -27,7 +27,6 @@ from keras.preprocessing.sequence import pad_sequences
 import pandas as pd
 import numpy
 import tensorflow as tf
-from collections import _count_elements
 from Keras import glove_embedding as embedding
 from Keras import util
 
