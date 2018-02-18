@@ -24,9 +24,10 @@ from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
-import pandas as pd
 import numpy
+import pandas as pd
 import tensorflow as tf
+
 from Keras import glove_embedding as embedding
 from Keras import util
 
@@ -51,8 +52,11 @@ tf.flags.DEFINE_string("optimizer", "nadam",
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
 tf.flags.DEFINE_string("raw_train_data", None,
                        "Where the raw train data is stored.")
+# Testing
 tf.flags.DEFINE_string("raw_test_data", None,
                        "Where the raw train data is stored.")
+tf.flags.DEFINE_string("generate_csv_submission", None,
+                       "Generate csv submission file.")
 
 # LSTM model
 tf.flags.DEFINE_integer("lstm_out_dimension", 50,
@@ -183,20 +187,9 @@ def main():
 
     train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
 
-    # Read test data and do same for test data.
-    test = pd.read_csv(FLAGS.raw_test_data)
-    test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
-        .apply(util.remove_stop_words_and_punctuation)
-    test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
-        .apply(util.remove_stop_words_and_punctuation)
-
-    test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
-                                                        test["question2"],
-                                                        tokenizer)
-
     # Split the data into a training set and a validation set.
     VALIDATION_SPLIT = 0.2
-    num_validation_samples = int(VALIDATION_SPLIT * test_data_1.shape[0])
+    num_validation_samples = int(VALIDATION_SPLIT * train_data_1.shape[0])
 
     train_set = [
         train_data_1[:-num_validation_samples],
@@ -213,14 +206,24 @@ def main():
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
     train(model, train_set, validation_set)
 
+    if FLAGS.generate_csv_submission is not None:
+        # Read test data and do same for test data.
+        test = pd.read_csv(FLAGS.raw_test_data)
+        test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
+            .apply(util.remove_stop_words_and_punctuation)
+        test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
+            .apply(util.remove_stop_words_and_punctuation)
 
-    # Testing and generating submission csv
-    print("Read test.csv file...")
-    preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
-                          verbose=1)
+        test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
+                                                            test["question2"],
+                                                            tokenizer)
+        # Testing and generating submission csv
+        print("Read test.csv file...")
+        preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
+                              verbose=1)
 
-    submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
-    submission.to_csv("preds" + ".csv", index=False)
+        submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
+        submission.to_csv("preds" + ".csv", index=False)
 
 if __name__ == "__main__":
     main()
