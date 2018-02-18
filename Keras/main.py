@@ -55,7 +55,7 @@ tf.flags.DEFINE_string("raw_train_data", None,
 # Testing
 tf.flags.DEFINE_string("raw_test_data", None,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_string("generate_csv_submission", None,
+tf.flags.DEFINE_bool("generate_csv_submission", None,
                        "Generate csv submission file.")
 
 # LSTM model
