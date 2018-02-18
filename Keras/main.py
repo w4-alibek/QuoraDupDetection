@@ -28,8 +28,8 @@ import numpy
 import pandas as pd
 import tensorflow as tf
 
-from Keras import glove_embedding as embedding
-from Keras import util
+import glove_embedding as embedding
+import util
 
 
 tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")

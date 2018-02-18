@@ -5,8 +5,8 @@ from keras.preprocessing.text import Tokenizer
 import numpy as np
 import pandas as pd
 
-from Keras import read_data
-from Keras import util
+import read_data
+import util
 
 def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequence_length):
     embeddings_index = read_data.read_GloVe(glove_embedding_path)
