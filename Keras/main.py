@@ -153,6 +153,7 @@ def train(model, train_set, validation_set):
                     batch_size=FLAGS.batch_size,
                     shuffle=True,
                     callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+
                     verbose=1)
 
     # evaluate model
