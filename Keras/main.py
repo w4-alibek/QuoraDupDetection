@@ -24,6 +24,7 @@ from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
+from time import gmtime, strftime
 import numpy
 import pandas as pd
 import tensorflow as tf
@@ -31,16 +32,13 @@ import tensorflow as tf
 import glove_embedding as embedding
 import util
 
-
 tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
 tf.flags.DEFINE_integer("max_sequence_length", 1000,
                        "Maximum length of question length")
 
 # Word embeddings
-tf.flags.DEFINE_string("word_embedding_path", '',
-                       "Where the word embedding vectors are located.")
-tf.flags.DEFINE_integer("embedding_vector_dimension", None,
-                        "Word embedding vector's dimension.")
+tf.flags.DEFINE_string("word_embedding_path", '', "Where the word embedding vectors are located.")
+tf.flags.DEFINE_integer("embedding_vector_dimension", None, "Word embedding vector's dimension.")
 
 # Training
 tf.flags.DEFINE_bool("remove_stopwords", True, "Remove stop words")
@@ -50,12 +48,13 @@ tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
-tf.flags.DEFINE_string("raw_train_data", None,
-                       "Where the raw train data is stored.")
+tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
+tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
+
 # Testing
 tf.flags.DEFINE_string("raw_test_data", None,
                        "Where the raw train data is stored.")
-tf.flags.DEFINE_bool("generate_csv_submission", None,
+tf.flags.DEFINE_bool("generate_csv_submission", False,
                        "Generate csv submission file.")
 
 # LSTM model
@@ -68,6 +67,7 @@ tf.flags.DEFINE_string(
     "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
 
 FLAGS = tf.flags.FLAGS
+NOW_DATETIME = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
 
 def build_lstm_layer():
     if FLAGS.model == "base_model":
@@ -142,7 +142,7 @@ def train(model, train_set, validation_set):
                         embeddings_freq=0,
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
-    best_model_path = "best_model.h5"
+    best_model_path = NOW_DATETIME + "_best_model.h5"
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
                                     save_weights_only=True)
@@ -164,6 +164,26 @@ def train(model, train_set, validation_set):
     print("--------------------")
     print("Last 5 samples validation:", history.history["val_acc"][-5:])
     print("Last 5 samples training:", history.history["acc"][-5:])
+
+def generate_csv_submission(model, tokenizer):
+    if FLAGS.generate_csv_submission:
+        # Read test data and do same for test data.
+        test = pd.read_csv(FLAGS.raw_test_data)
+        test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
+            .apply(util.remove_stop_words_and_punctuation)
+        test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
+            .apply(util.remove_stop_words_and_punctuation)
+
+        test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
+                                                            test["question2"],
+                                                            tokenizer)
+        # Testing and generating submission csv
+        print("Read test.csv file...")
+        preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
+                              verbose=1)
+
+        submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
+        submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
 
 def main():
     embedding_layer, labels, question1_list, question2_list, tokenizer = embedding\
@@ -188,8 +208,7 @@ def main():
     train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
 
     # Split the data into a training set and a validation set.
-    VALIDATION_SPLIT = 0.2
-    num_validation_samples = int(VALIDATION_SPLIT * train_data_1.shape[0])
+    num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
 
     train_set = [
         train_data_1[:-num_validation_samples],
@@ -206,24 +225,8 @@ def main():
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
     train(model, train_set, validation_set)
 
-    if FLAGS.generate_csv_submission is not None:
-        # Read test data and do same for test data.
-        test = pd.read_csv(FLAGS.raw_test_data)
-        test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
-            .apply(util.remove_stop_words_and_punctuation)
-        test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
-            .apply(util.remove_stop_words_and_punctuation)
-
-        test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
-                                                            test["question2"],
-                                                            tokenizer)
-        # Testing and generating submission csv
-        print("Read test.csv file...")
-        preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
-                              verbose=1)
-
-        submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
-        submission.to_csv("preds" + ".csv", index=False)
+    # Generate csv file for submission
+    generate_csv_submission(model, tokenizer)
 
 if __name__ == "__main__":
     main()
