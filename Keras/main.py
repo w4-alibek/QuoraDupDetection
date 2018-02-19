@@ -22,12 +22,15 @@ from keras.layers.merge import concatenate
 from keras.layers.merge import multiply
 from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
+from keras.models import load_mode
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from time import gmtime, strftime
 import numpy
 import pandas as pd
 import tensorflow as tf
+import sys
+
 
 import glove_embedding as embedding
 import util
@@ -61,7 +64,8 @@ tf.flags.DEFINE_bool("generate_csv_submission", False,
 tf.flags.DEFINE_integer("lstm_out_dimension", 50,
                         "Hidden state dimension (LSTM output vector dimension)")
 
-# Model selection.
+# Model
+tf.flags.DEFINE_string("load_model", None, "Where the model located")
 tf.flags.DEFINE_string(
     "model", "base_model",
     "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
@@ -131,8 +135,8 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
     return model
 
 def train(model, train_set, validation_set):
-    early_stopping = EarlyStopping(monitor="val_loss", patience=5)
-    csv_logger = CSVLogger('training.log')
+    early_stopping = EarlyStopping(monitor="val_loss")
+    csv_logger = CSVLogger(NOW_DATETIME+'_training.log')
     logging = TensorBoard(log_dir='./logs',
                         histogram_freq=0,
                         batch_size=FLAGS.batch_size,
@@ -192,6 +196,12 @@ def main():
                       FLAGS.raw_train_data,
                       FLAGS.embedding_vector_dimension,
                       FLAGS.max_sequence_length)
+
+    # Load precomputed model and test.
+    if FLAGS.load_model is not None:
+        model = load_model(FLAGS.load_model)
+        generate_csv_submission(model, tokenizer)
+        sys.exit()
 
     lstm_layer = build_lstm_layer()
 
