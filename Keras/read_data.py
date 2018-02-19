@@ -12,5 +12,5 @@ def read_GloVe(GLOVE_DIR):
             embeddings_index[word] = coefs
     print('Found %s word vectors.' % len(embeddings_index))
     f.close()
-    
+
     return embeddings_index;

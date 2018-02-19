@@ -133,15 +133,6 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
 def train(model, train_set, validation_set):
     early_stopping = EarlyStopping(monitor="val_loss", patience=5)
     csv_logger = CSVLogger('training.log')
-    logging = TensorBoard(log_dir='./logs',
-                        histogram_freq=0,
-                        batch_size=FLAGS.batch_size,
-                        write_graph=True,
-                        write_grads=False,
-                        write_images=False,
-                        embeddings_freq=0,
-                        embeddings_layer_names=None,
-                        embeddings_metadata=None)
     best_model_path = NOW_DATETIME + "_best_model.h5"
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
@@ -152,7 +143,7 @@ def train(model, train_set, validation_set):
                     epochs=FLAGS.num_epochs,
                     batch_size=FLAGS.batch_size,
                     shuffle=True,
-                    callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+                    callbacks=[early_stopping, model_checkpoint, csv_logger],
                     verbose=1)
 
     # evaluate model
