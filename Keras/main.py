@@ -185,7 +185,7 @@ def generate_csv_submission(model, tokenizer):
         preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
                               verbose=1)
 
-        submission = pd.DataFrame({"test_id": test["test_id"], "is_duplicate": preds.ravel()})
+        submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
 
 def main():
@@ -222,9 +222,9 @@ def main():
         num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
 
         train_set = [
-            train_data_1[:-num_validation_samples],
-            train_data_2[:-num_validation_samples],
-            labels[:-num_validation_samples]
+            train_data_1,
+            train_data_2,
+            labels
         ]
         validation_set = [
             train_data_1[-num_validation_samples:],
