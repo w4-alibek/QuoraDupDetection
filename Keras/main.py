@@ -22,7 +22,7 @@ from keras.layers.merge import concatenate
 from keras.layers.merge import multiply
 from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
-from keras.models import load_mode
+from keras.models import load_model
 from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from time import gmtime, strftime
