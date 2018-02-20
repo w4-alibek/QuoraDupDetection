@@ -29,14 +29,13 @@ from time import gmtime, strftime
 import numpy
 import pandas as pd
 import tensorflow as tf
-import sys
 
 
 import glove_embedding as embedding
 import util
 
 tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
-tf.flags.DEFINE_integer("max_sequence_length", 30,
+tf.flags.DEFINE_integer("max_sequence_length", 100,
                        "Maximum length of question length")
 
 # Word embeddings
@@ -65,7 +64,7 @@ tf.flags.DEFINE_integer("lstm_out_dimension", 50,
                         "Hidden state dimension (LSTM output vector dimension)")
 
 # Model
-tf.flags.DEFINE_string("load_model", None, "Where the model located")
+tf.flags.DEFINE_string("model_file_to_load", None, "Where the model weights file is located")
 tf.flags.DEFINE_string(
     "model", "base_model",
     "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
@@ -136,7 +135,7 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
 
 def train(model, train_set, validation_set):
     early_stopping = EarlyStopping(monitor="val_loss")
-    csv_logger = CSVLogger(NOW_DATETIME+'_training.log')
+    csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training.log')
     logging = TensorBoard(log_dir='./logs',
                         histogram_freq=0,
                         batch_size=FLAGS.batch_size,
@@ -157,7 +156,6 @@ def train(model, train_set, validation_set):
                     batch_size=FLAGS.batch_size,
                     shuffle=True,
                     callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
-
                     verbose=1)
 
     # evaluate model
@@ -172,6 +170,7 @@ def train(model, train_set, validation_set):
 
 def generate_csv_submission(model, tokenizer):
     if FLAGS.generate_csv_submission:
+        print("Testing...")
         # Read test data and do same for test data.
         test = pd.read_csv(FLAGS.raw_test_data)
         test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
@@ -210,12 +209,15 @@ def main():
     lstm_layer_lhs = lstm_layer(embedded_sequences_1)
     lstm_layer_rhs = lstm_layer(embedded_sequences_2)
 
-    # Building a model
+    # Build a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
 
-    #Train a model if load_model flag is none
-    if load_model is None:
-        train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
+    # Train a model if model_file_to_load flag not specified.
+    if FLAGS.model_file_to_load is None:
+        train_data_1, train_data_2 = generate_padded_sequence(
+            question1_list,
+            question2_list,
+            tokenizer)
 
         # Split the data into a training set and a validation set.
         num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
@@ -232,7 +234,7 @@ def main():
         ]
         train(model, train_set, validation_set)
     else:
-        model.load_weights(FLAGS.load_model)
+        model.load_weights(FLAGS.model_file_to_load)
 
     # Generate csv file for submission
     generate_csv_submission(model, tokenizer)
