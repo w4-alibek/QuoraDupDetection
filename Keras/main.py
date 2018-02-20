@@ -145,6 +145,7 @@ def train(model, train_set, validation_set):
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
     best_model_path = NOW_DATETIME + "_best_model.h5"
+    early_stopping = EarlyStopping(monitor="val_loss", patience=5)
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
                                     save_weights_only=True)
@@ -154,7 +155,7 @@ def train(model, train_set, validation_set):
                     epochs=FLAGS.num_epochs,
                     batch_size=FLAGS.batch_size,
                     shuffle=True,
-                    callbacks=[model_checkpoint, logging, csv_logger],
+                    callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                     verbose=1)
 
     # evaluate model
@@ -169,7 +170,7 @@ def train(model, train_set, validation_set):
 
 def generate_csv_submission(model, tokenizer):
     if FLAGS.generate_csv_submission:
-        print("Testing...")
+        print("Read test.csv file...")
         # Read test data and do same for test data.
         test = pd.read_csv(FLAGS.raw_test_data)
         test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
@@ -181,10 +182,10 @@ def generate_csv_submission(model, tokenizer):
                                                             test["question2"],
                                                             tokenizer)
         # Testing and generating submission csv
-        print("Read test.csv file...")
+
         preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
                               verbose=1)
-
+        print("Testing model...")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
 
