@@ -210,29 +210,29 @@ def main():
     lstm_layer_lhs = lstm_layer(embedded_sequences_1)
     lstm_layer_rhs = lstm_layer(embedded_sequences_2)
 
-    train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
-
-    # Split the data into a training set and a validation set.
-    num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
-
-    train_set = [
-        train_data_1[:-num_validation_samples],
-        train_data_2[:-num_validation_samples],
-        labels[:-num_validation_samples]
-    ]
-    validation_set = [
-        train_data_1[-num_validation_samples:],
-        train_data_2[-num_validation_samples:],
-        labels[-num_validation_samples:]
-    ]
-
-    # Building and Training a model
+    # Building a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
-    # Load precomputed model and test.
-    if FLAGS.load_model is not None:
-        model.load_weights(FLAGS.load_model)
-    else:
+
+    #Train a model if load_model flag is none
+    if load_model is None:
+        train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
+
+        # Split the data into a training set and a validation set.
+        num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
+
+        train_set = [
+            train_data_1[:-num_validation_samples],
+            train_data_2[:-num_validation_samples],
+            labels[:-num_validation_samples]
+        ]
+        validation_set = [
+            train_data_1[-num_validation_samples:],
+            train_data_2[-num_validation_samples:],
+            labels[-num_validation_samples:]
+        ]
         train(model, train_set, validation_set)
+    else:
+        model.load_weights(FLAGS.load_model)
 
     # Generate csv file for submission
     generate_csv_submission(model, tokenizer)
