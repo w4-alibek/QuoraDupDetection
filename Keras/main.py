@@ -197,12 +197,6 @@ def main():
                       FLAGS.embedding_vector_dimension,
                       FLAGS.max_sequence_length)
 
-    # Load precomputed model and test.
-    if FLAGS.load_model is not None:
-        model = load_model(FLAGS.load_model)
-        generate_csv_submission(model, tokenizer)
-        sys.exit()
-
     lstm_layer = build_lstm_layer()
 
     # Sequence padding to max sequence length
@@ -234,7 +228,11 @@ def main():
 
     # Building and Training a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
-    train(model, train_set, validation_set)
+    # Load precomputed model and test.
+    if FLAGS.load_model is not None:
+        model.load_weights(FLAGS.load_model)
+    else:
+        train(model, train_set, validation_set)
 
     # Generate csv file for submission
     generate_csv_submission(model, tokenizer)
