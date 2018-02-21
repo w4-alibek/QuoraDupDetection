@@ -182,10 +182,10 @@ def generate_csv_submission(model, tokenizer):
                                                             test["question2"],
                                                             tokenizer)
         # Testing and generating submission csv
-
+        print("Testing model...")
         preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
                               verbose=1)
-        print("Testing model...")
+        print("Generating submission csv file.")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
 
