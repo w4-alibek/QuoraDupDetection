@@ -144,7 +144,7 @@ def train(model, train_set, validation_set):
                         embeddings_freq=0,
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
-    best_model_path = NOW_DATETIME + "_best_model.h5"
+    best_model_path = "./models" + NOW_DATETIME + "_best_model.h5"
     early_stopping = EarlyStopping(monitor="val_loss", patience=5)
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
