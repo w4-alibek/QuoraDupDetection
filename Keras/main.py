@@ -149,8 +149,7 @@ def train(model, train_set, validation_set):
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
                                     save_weights_only=True)
-    history = model.fit([train_set[0],train_set[1]],
-                    train_set[2],
+    history = model.fit([train_set[0],train_set[1]],train_set[2],
                     validation_data=([validation_set[0], validation_set[1]], validation_set[2]),
                     epochs=FLAGS.num_epochs,
                     batch_size=FLAGS.batch_size,
@@ -223,9 +222,9 @@ def main():
         num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
 
         train_set = [
-            train_data_1,
-            train_data_2,
-            labels
+            train_data_1[:-num_validation_samples],
+            train_data_2[:-num_validation_samples],
+            labels[:-num_validation_samples]
         ]
         validation_set = [
             train_data_1[-num_validation_samples:],
