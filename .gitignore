@@ -10,3 +10,4 @@ Keras/models/*
 Keras/predictions/*.csv
 Keras/*.csv
 *.pyc
+*.h5
