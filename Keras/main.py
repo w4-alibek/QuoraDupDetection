@@ -176,16 +176,6 @@ def train(model, train_set):
                         callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                         verbose=1)
 
-    # evaluate model
-    train_score = model.evaluate([train_set[0],train_set[1]], train_set[2], verbose=True)
-    print("Training:  ", train_score)
-    print("--------------------")
-    print("First 5 samples validation:", history.history["val_acc"][0:5])
-    print("First 5 samples training:", history.history["acc"][0:5])
-    print("--------------------")
-    print("Last 5 samples validation:", history.history["val_acc"][-5:])
-    print("Last 5 samples training:", history.history["acc"][-5:])
-
 
 def train_extra(model, train_set):
     csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training_extra.log')
@@ -212,16 +202,6 @@ def train_extra(model, train_set):
                         shuffle=True,
                         callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                         verbose=1)
-
-    # evaluate model
-    train_score = model.evaluate([train_set[0], train_set[1]], train_set[2], verbose=True)
-    print("Training:  ", train_score)
-    print("--------------------")
-    print("First 5 samples validation:", history.history["val_acc"][0:5])
-    print("First 5 samples training:", history.history["acc"][0:5])
-    print("--------------------")
-    print("Last 5 samples validation:", history.history["val_acc"][-5:])
-    print("Last 5 samples training:", history.history["acc"][-5:])
 
 
 def generate_csv_submission(test_data_1, test_data_2, model, model_type):
