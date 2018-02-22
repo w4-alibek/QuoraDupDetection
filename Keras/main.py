@@ -1,8 +1,20 @@
 """Trains LSTM model with train.csv. How to run:
 python main.py
+
+<REQUIRED FLAGS TO RUN>
 --raw_train_data ~chungshik/quora_data/data/train.csv
 --word_embedding_path ~chungshik/quora_data/word_embeddings/glove.840B.300d.txt
---embedding_vector_dimension 300 --batch_size 100
+--embedding_vector_dimension 300
+--path_save_best_model
+
+<PREREQUISITE TO EACH OTHER FLAGS>
+###################################
+--raw_test_data                 ###
+--generate_csv_submission       ###
+###################################
+
+<USE THIS FLAG ONLY WHEN GENERATING SUBMISSION FILE FROM SAVED MODEL.>
+--model_file_to_load
 """
 from __future__ import print_function
 
@@ -29,14 +41,10 @@ from time import gmtime, strftime
 import numpy
 import pandas as pd
 import tensorflow as tf
-
+import os
 
 import glove_embedding as embedding
 import util
-
-tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
-tf.flags.DEFINE_integer("max_sequence_length", 100,
-                       "Maximum length of question length")
 
 # Word embeddings
 tf.flags.DEFINE_string("word_embedding_path", '', "Where the word embedding vectors are located.")
@@ -44,33 +52,38 @@ tf.flags.DEFINE_integer("embedding_vector_dimension", None, "Word embedding vect
 
 # Training
 tf.flags.DEFINE_bool("remove_stopwords", True, "Remove stop words")
-tf.flags.DEFINE_integer("batch_size", 100, "Batch size")
 tf.flags.DEFINE_float("learning_rate", 0.002, "Learning rate")
+tf.flags.DEFINE_integer("batch_size", 100, "Batch size")
+tf.flags.DEFINE_integer("max_sequence_length", 100, "Maximum length of question length")
 tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
+tf.flags.DEFINE_integer("train_extra_num_epoch", 0, "Train the model full data set.")
+tf.flags.DEFINE_integer("early_stopping_patience", 5,
+                        "Number of epochs with no improvement after which training will be stopped")
+tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
+tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
+tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
-tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
-tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
 
 # Testing
-tf.flags.DEFINE_string("raw_test_data", None,
-                       "Where the raw train data is stored.")
+tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_bool("generate_csv_submission", False,
-                       "Generate csv submission file.")
+                     "Generate csv submission file base on last model.")
 
 # LSTM model
 tf.flags.DEFINE_integer("lstm_out_dimension", 50,
                         "Hidden state dimension (LSTM output vector dimension)")
+tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
 
 # Model
 tf.flags.DEFINE_string("model_file_to_load", None, "Where the model weights file is located")
-tf.flags.DEFINE_string(
-    "model", "base_model",
-    "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
+tf.flags.DEFINE_string("model", "base_model",
+                       "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
 
 FLAGS = tf.flags.FLAGS
 NOW_DATETIME = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
+
 
 def build_lstm_layer():
     if FLAGS.model == "base_model":
@@ -83,6 +96,7 @@ def build_lstm_layer():
         lstm_layer = LSTM(FLAGS.lstm_out_dimension, recurrent_dropout=FLAGS.zoneout)
     return lstm_layer
 
+
 def generate_padded_sequence(question1_list, question2_list, tokenizer):
     sequences1 = tokenizer.texts_to_sequences(question1_list)
     sequences2 = tokenizer.texts_to_sequences(question2_list)
@@ -91,6 +105,7 @@ def generate_padded_sequence(question1_list, question2_list, tokenizer):
     data_2 = pad_sequences(sequences2, maxlen=FLAGS.max_sequence_length)
 
     return data_1, data_2
+
 
 def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2):
     # Square difference
@@ -133,7 +148,8 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
     model.compile(loss="binary_crossentropy", optimizer=optimizer, metrics=['accuracy'])
     return model
 
-def train(model, train_set, validation_set):
+
+def train(model, train_set):
     csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training.log')
     logging = TensorBoard(log_dir='./logs',
                         histogram_freq=0,
@@ -144,18 +160,19 @@ def train(model, train_set, validation_set):
                         embeddings_freq=0,
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
-    best_model_path = "./models" + NOW_DATETIME + "_best_model.h5"
-    early_stopping = EarlyStopping(monitor="val_loss", patience=5)
+    best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_model.h5")
+    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
     model_checkpoint = ModelCheckpoint(best_model_path,
                                     save_best_only=True,
                                     save_weights_only=True)
+
     history = model.fit([train_set[0],train_set[1]],train_set[2],
-                    validation_data=([validation_set[0], validation_set[1]], validation_set[2]),
-                    epochs=FLAGS.num_epochs,
-                    batch_size=FLAGS.batch_size,
-                    shuffle=True,
-                    callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
-                    verbose=1)
+                        validation_split=FLAGS.validation_split,
+                        epochs=FLAGS.num_epochs,
+                        batch_size=FLAGS.batch_size,
+                        shuffle=True,
+                        callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+                        verbose=1)
 
     # evaluate model
     train_score = model.evaluate([train_set[0],train_set[1]], train_set[2], verbose=True)
@@ -166,6 +183,7 @@ def train(model, train_set, validation_set):
     print("--------------------")
     print("Last 5 samples validation:", history.history["val_acc"][-5:])
     print("Last 5 samples training:", history.history["acc"][-5:])
+
 
 def generate_csv_submission(model, tokenizer):
     if FLAGS.generate_csv_submission:
@@ -187,6 +205,28 @@ def generate_csv_submission(model, tokenizer):
         print("Generating preds_"+ NOW_DATETIME + ".csv ...")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
+
+
+def train_extra(model, train_set):
+    csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training_extra.log')
+    logging = TensorBoard(log_dir='./logs',
+                          histogram_freq=0,
+                          batch_size=FLAGS.batch_size,
+                          write_graph=True,
+                          write_grads=False,
+                          write_images=False,
+                          embeddings_freq=0,
+                          embeddings_layer_names=None,
+                          embeddings_metadata=None)
+    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
+    model.fit([train_set[0], train_set[1]], train_set[2],
+                        validation_split=0.0,
+                        epochs=FLAGS.num_epochs,
+                        batch_size=FLAGS.batch_size,
+                        shuffle=True,
+                        callbacks=[early_stopping, logging, csv_logger],
+                        verbose=1)
+
 
 def main():
     embedding_layer, labels, question1_list, question2_list, tokenizer = embedding\
@@ -211,32 +251,32 @@ def main():
     # Build a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
 
-    # Train a model if model_file_to_load flag not specified.
+    # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
     if FLAGS.model_file_to_load is None:
         train_data_1, train_data_2 = generate_padded_sequence(
             question1_list,
             question2_list,
             tokenizer)
 
-        # Split the data into a training set and a validation set.
-        num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
-
-        train_set = [
-            train_data_1[:-num_validation_samples],
-            train_data_2[:-num_validation_samples],
-            labels[:-num_validation_samples]
-        ]
-        validation_set = [
-            train_data_1[-num_validation_samples:],
-            train_data_2[-num_validation_samples:],
-            labels[-num_validation_samples:]
-        ]
-        train(model, train_set, validation_set)
+        train_set = [train_data_1,train_data_2,labels]
+        train(model, train_set)
     else:
         model.load_weights(FLAGS.model_file_to_load)
 
+    # Extra train so far existing model.
+    if FLAGS.train_extra_num_epoch > 0:
+        # Load best model from training.
+        if (FLAGS.model_file_to_load is None):
+            best_model_path = os.path.join(FLAGS.path_save_best_model,
+                                           NOW_DATETIME + "_best_model.h5")
+            model.load_weights(best_model_path)
+
+        train_set = [ train_data_1, train_data_2, labels]
+        train_extra(model, train_set)
+
     # Generate csv file for submission
-    generate_csv_submission(model, tokenizer)
+    if FLAGS.generate_csv_submission:
+        generate_csv_submission(model, tokenizer)
 
 if __name__ == "__main__":
     main()

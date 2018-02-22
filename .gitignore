@@ -11,3 +11,4 @@ Keras/predictions/*.csv
 Keras/*.csv
 *.pyc
 *.h5
+commond_line
