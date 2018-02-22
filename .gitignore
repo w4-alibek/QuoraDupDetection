@@ -8,7 +8,8 @@ Keras/loss_history.txt
 Keras/models/*
 *.py
 Keras/predictions/*.csv
-Keras/*.csv
+*.csv
 *.pyc
 *.h5
 commond_line
+

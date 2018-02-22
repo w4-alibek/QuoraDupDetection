@@ -185,6 +185,43 @@ def train(model, train_set):
     print("Last 5 samples training:", history.history["acc"][-5:])
 
 
+def train_extra(model, train_set):
+    csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training_extra.log')
+    logging = TensorBoard(log_dir='./logs_extra',
+                          histogram_freq=0,
+                          batch_size=FLAGS.batch_size,
+                          write_graph=True,
+                          write_grads=False,
+                          write_images=False,
+                          embeddings_freq=0,
+                          embeddings_layer_names=None,
+                          embeddings_metadata=None)
+    best_model_path = os.path.join(FLAGS.path_save_best_model,
+                                   NOW_DATETIME + "_extra_train_best_model.h5")
+    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
+    model_checkpoint = ModelCheckpoint(best_model_path,
+                                       save_best_only=True,
+                                       save_weights_only=True)
+
+    history = model.fit([train_set[0], train_set[1]], train_set[2],
+                        validation_split=FLAGS.validation_split,
+                        epochs=FLAGS.train_extra_num_epoch,
+                        batch_size=FLAGS.batch_size,
+                        shuffle=True,
+                        callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+                        verbose=1)
+
+    # evaluate model
+    train_score = model.evaluate([train_set[0], train_set[1]], train_set[2], verbose=True)
+    print("Training:  ", train_score)
+    print("--------------------")
+    print("First 5 samples validation:", history.history["val_acc"][0:5])
+    print("First 5 samples training:", history.history["acc"][0:5])
+    print("--------------------")
+    print("Last 5 samples validation:", history.history["val_acc"][-5:])
+    print("Last 5 samples training:", history.history["acc"][-5:])
+
+
 def generate_csv_submission(model, tokenizer):
     if FLAGS.generate_csv_submission:
         print("Read test.csv file...")
@@ -205,27 +242,6 @@ def generate_csv_submission(model, tokenizer):
         print("Generating preds_"+ NOW_DATETIME + ".csv ...")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
-
-
-def train_extra(model, train_set):
-    csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training_extra.log')
-    logging = TensorBoard(log_dir='./logs',
-                          histogram_freq=0,
-                          batch_size=FLAGS.batch_size,
-                          write_graph=True,
-                          write_grads=False,
-                          write_images=False,
-                          embeddings_freq=0,
-                          embeddings_layer_names=None,
-                          embeddings_metadata=None)
-    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
-    model.fit([train_set[0], train_set[1]], train_set[2],
-                        validation_split=0.0,
-                        epochs=FLAGS.train_extra_num_epoch,
-                        batch_size=FLAGS.batch_size,
-                        shuffle=True,
-                        callbacks=[early_stopping, logging, csv_logger],
-                        verbose=1)
 
 
 def main():
@@ -270,8 +286,10 @@ def main():
             best_model_path = os.path.join(FLAGS.path_save_best_model,
                                            NOW_DATETIME + "_best_model.h5")
             model.load_weights(best_model_path)
-
-        train_set = [ train_data_1, train_data_2, labels]
+        num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
+        train_set = [train_data_1[-num_validation_samples:],
+                     train_data_2[-num_validation_samples:],
+                     labels[-num_validation_samples:]]
         train_extra(model, train_set)
 
     # Generate csv file for submission
