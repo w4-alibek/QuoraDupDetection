@@ -221,7 +221,7 @@ def train_extra(model, train_set):
     early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
     model.fit([train_set[0], train_set[1]], train_set[2],
                         validation_split=0.0,
-                        epochs=FLAGS.num_epochs,
+                        epochs=FLAGS.train_extra_num_epoch,
                         batch_size=FLAGS.batch_size,
                         shuffle=True,
                         callbacks=[early_stopping, logging, csv_logger],
