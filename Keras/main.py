@@ -68,7 +68,9 @@ tf.flags.DEFINE_string("optimizer", "nadam",
 
 # Testing
 tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is stored.")
-tf.flags.DEFINE_bool("generate_csv_submission", False,
+tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
+                     "Generate csv submission file base on last model.")
+tf.flags.DEFINE_bool("generate_csv_submission_extra_best_model", False,
                      "Generate csv submission file base on last model.")
 
 # LSTM model
@@ -222,26 +224,14 @@ def train_extra(model, train_set):
     print("Last 5 samples training:", history.history["acc"][-5:])
 
 
-def generate_csv_submission(model, tokenizer):
-    if FLAGS.generate_csv_submission:
-        print("Read test.csv file...")
-        # Read test data and do same for test data.
-        test = pd.read_csv(FLAGS.raw_test_data)
-        test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
-            .apply(util.remove_stop_words_and_punctuation)
-        test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
-            .apply(util.remove_stop_words_and_punctuation)
-
-        test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
-                                                            test["question2"],
-                                                            tokenizer)
+def generate_csv_submission(test_data_1, test_data_2, model, model_type):
         # Testing and generating submission csv
         print("Testing model...")
         preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
                               verbose=1)
         print("Generating preds_"+ NOW_DATETIME + ".csv ...")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
-        submission.to_csv("predictions/preds_"+ NOW_DATETIME + ".csv", index=False)
+        submission.to_csv("predictions/preds_"+ NOW_DATETIME + model_type + ".csv", index=False)
 
 
 def main():
@@ -267,17 +257,34 @@ def main():
     # Build a model
     model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
 
+    # Padding sequence
+    train_data_1, train_data_2 = generate_padded_sequence(
+        question1_list,
+        question2_list,
+        tokenizer)
+
     # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
     if FLAGS.model_file_to_load is None:
-        train_data_1, train_data_2 = generate_padded_sequence(
-            question1_list,
-            question2_list,
-            tokenizer)
-
         train_set = [train_data_1,train_data_2,labels]
         train(model, train_set)
     else:
         model.load_weights(FLAGS.model_file_to_load)
+
+    print("Read test.csv file...")
+    # Read test data and do same for test data.
+    test = pd.read_csv(FLAGS.raw_test_data)
+    test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
+        .apply(util.remove_stop_words_and_punctuation)
+    test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
+        .apply(util.remove_stop_words_and_punctuation)
+
+    test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
+                                                        test["question2"],
+                                                        tokenizer)
+
+    # Generate csv file for submission with best model
+    if FLAGS.generate_csv_submission_best_model:
+        generate_csv_submission(test_data_1, test_data_2, model, "")
 
     # Extra train so far existing model.
     if FLAGS.train_extra_num_epoch > 0:
@@ -292,9 +299,9 @@ def main():
                      labels[-num_validation_samples:]]
         train_extra(model, train_set)
 
-    # Generate csv file for submission
-    if FLAGS.generate_csv_submission:
-        generate_csv_submission(model, tokenizer)
+    # Generate csv file for submission with extra trained best model
+    if FLAGS.generate_csv_submission_extra_best_model:
+        generate_csv_submission(test_data_1, test_data_2, model, "_extra")
 
 if __name__ == "__main__":
     main()
