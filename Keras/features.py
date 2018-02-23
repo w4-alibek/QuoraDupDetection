@@ -5,6 +5,7 @@ refs: https://github.com/aerdem4/kaggle-quora-dup
 """
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
+from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 import pandas as pd
 import re
