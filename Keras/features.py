@@ -21,12 +21,16 @@ tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is store
 FLAGS = tf.flags.FLAGS
 
 
+def lemmatize_word(word):
+    if len(word) < 4:
+        return word
+    return WordNetLemmatizer().lemmatize(WordNetLemmatizer().lemmatize(word, "n"), "v")
+
+
 def word_net_lemmatize(text):
     """Normalize the given list of words. Return list of normalized word
     """
-    return ' '.join(
-        [WordNetLemmatizer().lemmatize(
-            WordNetLemmatizer().lemmatize(word, "n"), "v") for word in text.split()])
+    return ' '.join([lemmatize_word(w) for w in text.split()])
 
 
 def clean_text(text):
