@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
 refs: https://github.com/aerdem4/kaggle-quora-dup
@@ -11,6 +12,7 @@ import re
 import string
 import tensorflow as tf
 import util
+import os, sys
 
 STOP_WORDS = stopwords.words("english")
 
@@ -33,8 +35,6 @@ def word_net_lemmatize(text):
 
 
 def clean_text(text):
-    text = unicode(text, errors='ignore')
-
     text = text\
         .lower()\
         .replace(",000,000", "m")\
