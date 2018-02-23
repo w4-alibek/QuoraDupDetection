@@ -265,8 +265,8 @@ def main():
     test = pd.read_csv(FLAGS.raw_test_data_)
     test["question1"] = test["question1"].fillna("").apply(features.clean_text)\
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
-    test["question2"] = test["question2"].fillna("").apply(features.word_net_lemmatize)\
-        .apply(features.clean_text).apply(features.remove_stop_words_and_punctuation)
+    test["question2"] = test["question2"].fillna("").apply(features.clean_text)\
+        .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
 
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
 
