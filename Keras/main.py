@@ -171,7 +171,7 @@ def train(model, train_set):
                                     save_best_only=True,
                                     save_weights_only=True)
 
-    model.fit([train_set[0],train_set[1]],train_set[2],
+    model.fit([train_set[0],train_set[1], train_set[2]],train_set[3],
                         validation_split=FLAGS.validation_split,
                         epochs=FLAGS.num_epochs,
                         batch_size=FLAGS.batch_size,
@@ -199,7 +199,7 @@ def train_extra(model, train_set):
                                        save_best_only=True,
                                        save_weights_only=True)
 
-    model.fit([train_set[0], train_set[1]], train_set[2],
+    model.fit([train_set[0], train_set[1], train_set[2]], train_set[3],
                         validation_split=FLAGS.validation_split,
                         epochs=FLAGS.train_extra_num_epoch,
                         batch_size=FLAGS.batch_size,
