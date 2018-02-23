@@ -7,6 +7,7 @@ from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
 import pandas as pd
 import re
+import string
 import tensorflow as tf
 import util
 
