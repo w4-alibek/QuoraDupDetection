@@ -44,7 +44,7 @@ import tensorflow as tf
 import os
 
 import glove_embedding as embedding
-import util
+import features
 
 # Word embeddings
 tf.flags.DEFINE_string("word_embedding_path", '', "Where the word embedding vectors are located.")
@@ -217,6 +217,7 @@ def generate_csv_submission(test_data_1, test_data_2, model, model_type, test):
 
 
 def main():
+    print("Building embedding layer...")
     embedding_layer, labels, question1_list, question2_list, tokenizer = embedding\
         .process_data(FLAGS.word_embedding_path,
                       FLAGS.raw_train_data,
@@ -255,10 +256,10 @@ def main():
     print("Read test.csv file...")
     # Read test data and do same for test data.
     test = pd.read_csv(FLAGS.raw_test_data)
-    test["question1"] = test["question1"].fillna("").apply(util.clean_text) \
-        .apply(util.remove_stop_words_and_punctuation)
-    test["question2"] = test["question2"].fillna("").apply(util.clean_text) \
-        .apply(util.remove_stop_words_and_punctuation)
+    test["question1"] = test["question1"].fillna("").apply(features.clean_text) \
+        .apply(features.remove_stop_words_and_punctuation)
+    test["question2"] = test["question2"].fillna("").apply(features.clean_text) \
+        .apply(features.remove_stop_words_and_punctuation).apply(word_net_lemmatize)
 
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
