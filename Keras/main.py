@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 """Trains LSTM model with train.csv. How to run:
 python main.py
