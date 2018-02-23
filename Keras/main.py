@@ -204,7 +204,7 @@ def train_extra(model, train_set):
                         verbose=1)
 
 
-def generate_csv_submission(test_data_1, test_data_2, model, model_type):
+def generate_csv_submission(test_data_1, test_data_2, model, model_type, test):
         # Testing and generating submission csv
         print("Testing model...")
         preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
@@ -264,7 +264,7 @@ def main():
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
-        generate_csv_submission(test_data_1, test_data_2, model, "")
+        generate_csv_submission(test_data_1, test_data_2, model, "", test)
 
     # Extra train so far existing model.
     if FLAGS.train_extra_num_epoch > 0:
@@ -281,7 +281,7 @@ def main():
 
     # Generate csv file for submission with extra trained best model
     if FLAGS.generate_csv_submission_extra_best_model:
-        generate_csv_submission(test_data_1, test_data_2, model, "_extra")
+        generate_csv_submission(test_data_1, test_data_2, model, "_extra", test)
 
 if __name__ == "__main__":
     main()
