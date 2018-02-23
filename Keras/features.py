@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""Utility functions
+"""
 refs: https://github.com/aerdem4/kaggle-quora-dup
 """
 from fuzzywuzzy import fuzz
@@ -40,8 +40,6 @@ def clean_text(text):
         .lower()\
         .replace(",000,000", "m")\
         .replace(",000", "k")\
-        .replace("′", "'")\
-        .replace("’", "'")\
         .replace("won't", "will not")\
         .replace("cannot", "can not")\
         .replace("can't", "can not")\
