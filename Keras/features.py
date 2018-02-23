@@ -34,6 +34,8 @@ def word_net_lemmatize(text):
 
 
 def clean_text(text):
+    text = unicode(text, errors='ignore')
+
     text = text\
         .lower()\
         .replace(",000,000", "m")\
