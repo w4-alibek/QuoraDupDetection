@@ -61,13 +61,16 @@ tf.flags.DEFINE_integer("early_stopping_patience", 5,
                         "Number of epochs with no improvement after which training will be stopped")
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
+tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
 tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
 
+
 # Testing
-tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is stored.")
+tf.flags.DEFINE_string("raw_test_data", None, "Where the raw test data is stored.")
+tf.flags.DEFINE_string("raw_test_nlp_features", None, "Where the raw test nlp features is stored.")
 tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
                      "Generate csv submission file base on last model.")
 tf.flags.DEFINE_bool("generate_csv_submission_extra_best_model", False,
