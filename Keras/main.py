@@ -175,6 +175,7 @@ def train(model, train_set):
                         shuffle=True,
                         callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                         verbose=1)
+    print("'Best model from training saved: " + NOW_DATETIME + "_best_model.h5")
 
 
 def train_extra(model, train_set):
@@ -195,13 +196,14 @@ def train_extra(model, train_set):
                                        save_best_only=True,
                                        save_weights_only=True)
 
-    history = model.fit([train_set[0], train_set[1]], train_set[2],
+    model.fit([train_set[0], train_set[1]], train_set[2],
                         validation_split=FLAGS.validation_split,
                         epochs=FLAGS.train_extra_num_epoch,
                         batch_size=FLAGS.batch_size,
                         shuffle=True,
                         callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
                         verbose=1)
+    print("'Best model from extra training saved: " + NOW_DATETIME + "_extra_train_best_model.h5")
 
 
 def generate_csv_submission(test_data_1, test_data_2, model, model_type, test):
