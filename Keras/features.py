@@ -149,16 +149,16 @@ def extract_features(nlp_features):
         lambda x: get_longest_substr_ratio(x["question1"], x["question2"]), axis=1)
     return nlp_features
 
-print("Extracting features for train...")
-train_nlp_features = pd.read_csv(FLAGS.raw_train_data)
-train_nlp_features = extract_features(train_nlp_features)
-train_nlp_features.drop(["id", "qid1", "qid2", "question1", "question2", "is_duplicate"],
-                        axis=1,
-                        inplace=True)
-train_nlp_features.to_csv("data/nlp_features_train.csv", index=False)
-
-print("Extracting features for test...")
-test_nlp_features = pd.read_csv(FLAGS.raw_test_data)
-test_nlp_features = extract_features(test_nlp_features)
-test_nlp_features.drop(["test_id", "question1", "question2"], axis=1, inplace=True)
-test_nlp_features.to_csv("data/nlp_features_test.csv", index=False)
+# print("Extracting features for train...")
+# train_nlp_features = pd.read_csv(FLAGS.raw_train_data)
+# train_nlp_features = extract_features(train_nlp_features)
+# train_nlp_features.drop(["id", "qid1", "qid2", "question1", "question2", "is_duplicate"],
+#                         axis=1,
+#                         inplace=True)
+# train_nlp_features.to_csv("data/nlp_features_train.csv", index=False)
+#
+# print("Extracting features for test...")
+# test_nlp_features = pd.read_csv(FLAGS.raw_test_data)
+# test_nlp_features = extract_features(test_nlp_features)
+# test_nlp_features.drop(["test_id", "question1", "question2"], axis=1, inplace=True)
+# test_nlp_features.to_csv("data/nlp_features_test.csv", index=False)
