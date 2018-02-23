@@ -25,8 +25,8 @@ def word_net_lemmatize(text):
     """Normalize the given list of words. Return list of normalized word
     """
     return ' '.join(
-        [WordNetLemmatizer.lemmatize(
-            WordNetLemmatizer.lemmatize(word, "n"), "v") for word in text.split()])
+        [WordNetLemmatizer().lemmatize(
+            WordNetLemmatizer().lemmatize(word, "n"), "v") for word in text.split()])
 
 
 def clean_text(text):
