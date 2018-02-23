@@ -224,7 +224,7 @@ def main():
     print("Building embedding layer...")
     embedding_layer, train_labels, question1_list, question2_list, tokenizer = embedding\
         .process_data(FLAGS.word_embedding_path,
-                      FLAGS.raw_train_data,
+                      FLAGS.raw_train_data_,
                       FLAGS.embedding_vector_dimension,
                       FLAGS.max_sequence_length)
 
@@ -262,7 +262,7 @@ def main():
 
     print("Read test.csv file...")
     # Read test data and do same for test data.
-    test = pd.read_csv(FLAGS.raw_test_data)
+    test = pd.read_csv(FLAGS.raw_test_data_)
     test["question1"] = test["question1"].fillna("").apply(features.clean_text)\
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
     test["question2"] = test["question2"].fillna("").apply(features.clean_text)\
