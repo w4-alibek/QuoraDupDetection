@@ -70,7 +70,7 @@ def remove_stop_words_and_punctuation(text):
     filtered_words = [w for w in word_tokens if not w in stop_words]
     return ' '.join(filtered_words)
 
-
+# Generate nlp features for test and train data set.
 def get_token_features(question1, question2):
     token_features = [0.0]*10
 

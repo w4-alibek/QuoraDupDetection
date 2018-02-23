@@ -168,7 +168,7 @@ def train(model, train_set):
                                     save_best_only=True,
                                     save_weights_only=True)
 
-    history = model.fit([train_set[0],train_set[1]],train_set[2],
+    model.fit([train_set[0],train_set[1]],train_set[2],
                         validation_split=FLAGS.validation_split,
                         epochs=FLAGS.num_epochs,
                         batch_size=FLAGS.batch_size,
@@ -206,19 +206,20 @@ def train_extra(model, train_set):
     print("'Best model from extra training saved: " + NOW_DATETIME + "_extra_train_best_model.h5")
 
 
-def generate_csv_submission(test_data_1, test_data_2, model, model_type, test):
+def generate_csv_submission(test_set, model_type):
         # Testing and generating submission csv
         print("Testing model...")
-        preds = model.predict([test_data_1, test_data_2], batch_size=FLAGS.batch_size,
+        preds = model.predict([test_set[0], test_set[1], test_set[2]],
+                              batch_size=FLAGS.batch_size,
                               verbose=1)
         print("Generating preds_"+ NOW_DATETIME + ".csv ...")
-        submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test["test_id"]})
+        submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test_set[3]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + model_type + ".csv", index=False)
 
 
 def main():
     print("Building embedding layer...")
-    embedding_layer, labels, question1_list, question2_list, tokenizer = embedding\
+    embedding_layer, train_labels, question1_list, question2_list, tokenizer = embedding\
         .process_data(FLAGS.word_embedding_path,
                       FLAGS.raw_train_data,
                       FLAGS.embedding_vector_dimension,
@@ -246,9 +247,12 @@ def main():
         question2_list,
         tokenizer)
 
+    # Load nlp features for train data set.
+    train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
+
     # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
     if FLAGS.model_file_to_load is None:
-        train_set = [train_data_1,train_data_2,labels]
+        train_set = [train_data_1,train_data_2, train_nlp_features, train_labels]
         train(model, train_set)
     else:
         model.load_weights(FLAGS.model_file_to_load)
@@ -261,13 +265,18 @@ def main():
     test["question2"] = test["question2"].fillna("").apply(features.clean_text)\
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
 
+    test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
+
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
                                                         tokenizer)
+    test_id = test["test_id"]
+
+    test_set = [test_data_1, test_data_2, test_nlp_features, test_id]
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
-        generate_csv_submission(test_data_1, test_data_2, model, "", test)
+        generate_csv_submission(test_set, "")
 
     # Extra train so far existing model.
     if FLAGS.train_extra_num_epoch > 0:
@@ -279,12 +288,12 @@ def main():
         num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
         train_set = [train_data_1[-num_validation_samples:],
                      train_data_2[-num_validation_samples:],
-                     labels[-num_validation_samples:]]
+                     train_labels[-num_validation_samples:]]
         train_extra(model, train_set)
 
     # Generate csv file for submission with extra trained best model
     if FLAGS.generate_csv_submission_extra_best_model:
-        generate_csv_submission(test_data_1, test_data_2, model, "_extra", test)
+        generate_csv_submission(test_set, "_extra")
 
 if __name__ == "__main__":
     main()
