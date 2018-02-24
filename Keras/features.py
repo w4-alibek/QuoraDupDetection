@@ -61,17 +61,17 @@ def clean_text(text):
          (u"=", u" equal "),
          (u"+", u" plus "))
 
-    text = text.lower()
+    u_text = unicode(text.lower(), errors='ignore')
     for original, replaced in r:
         try:
-            text = text.replace(original, replaced)
+            u_text = u_text.replace(original, replaced)
         except UnicodeDecodeError:
             print(repr(text), repr(original), repr(replaced))
 
-    text = re.sub('[“”\(\'…\)\!\^\"\.;:,\-\?？\{\}\[\]\\/\*@]', ' ', text)
-    text = re.sub(r"([0-9]+)000000", r"\1m", text)
-    text = re.sub(r"([0-9]+)000", r"\1k", text)
-    return text
+    u_text = re.sub('[“”\(\'…\)\!\^\"\.;:,\-\?？\{\}\[\]\\/\*@]', ' ', u_text)
+    u_text = re.sub(r"([0-9]+)000000", r"\1m", u_text)
+    u_text = re.sub(r"([0-9]+)000", r"\1k", u_text)
+    return str(u_text)
 
 
 def remove_stop_words_and_punctuation(text):

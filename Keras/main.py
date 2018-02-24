@@ -55,6 +55,7 @@ tf.flags.DEFINE_integer("embedding_vector_dimension", None, "Word embedding vect
 # Training
 tf.flags.DEFINE_bool("remove_stopwords", True, "Remove stop words")
 tf.flags.DEFINE_float("learning_rate", 0.002, "Learning rate")
+tf.flags.DEFINE_float("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_integer("batch_size", 100, "Batch size")
 tf.flags.DEFINE_integer("max_sequence_length", 100, "Maximum length of question length")
 tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
@@ -64,7 +65,6 @@ tf.flags.DEFINE_integer("early_stopping_patience", 5,
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
-tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
@@ -223,7 +223,7 @@ def train_extra(model, train_set):
     print("'Best model from extra training saved: " + NOW_DATETIME + "_extra_train_best_model.h5")
 
 
-def generate_csv_submission(test_set, model_type):
+def generate_csv_submission(model, test_set, model_type):
         # Testing and generating submission csv
         print("Testing model...")
         preds = model.predict([test_set[0], test_set[1], test_set[2]],
@@ -299,7 +299,7 @@ def main():
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
-        generate_csv_submission(test_set, "")
+        generate_csv_submission(model, test_set, "")
 
     # Extra train so far existing model.
     if FLAGS.train_extra_num_epoch > 0:
@@ -316,7 +316,7 @@ def main():
 
     # Generate csv file for submission with extra trained best model
     if FLAGS.generate_csv_submission_extra_best_model:
-        generate_csv_submission(test_set, "_extra")
+        generate_csv_submission(model, test_set, "_extra")
 
 if __name__ == "__main__":
     main()

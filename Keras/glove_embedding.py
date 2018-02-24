@@ -13,7 +13,7 @@ def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequen
     print("Reading GloVe embedding...")
     embeddings_index = read_data.read_GloVe(glove_embedding_path)
     print("Reading train data set...")
-    train = pd.read_csv(raw_train_data, encoding="utf-8")
+    train = pd.read_csv(raw_train_data)
     print("Text processing...")
     train["question1"] = train["question1"].fillna("").apply(features.clean_text) \
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
