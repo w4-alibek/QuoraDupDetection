@@ -62,7 +62,7 @@ tf.flags.DEFINE_integer("train_extra_num_epoch", 0, "Train the model full data s
 tf.flags.DEFINE_integer("early_stopping_patience", 5,
                         "Number of epochs with no improvement after which training will be stopped")
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
-tf.flags.DEFINE_string("raw_train_data_", None, "Where the raw train data is stored.")
+tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
 tf.flags.DEFINE_string("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_string("optimizer", "nadam",
@@ -71,7 +71,7 @@ tf.flags.DEFINE_string("optimizer", "nadam",
 
 
 # Testing
-tf.flags.DEFINE_string("raw_test_data_", None, "Where the raw test data is stored.")
+tf.flags.DEFINE_string("raw_test_data", None, "Where the raw test data is stored.")
 tf.flags.DEFINE_string("raw_test_nlp_features", None, "Where the raw test nlp features is stored.")
 tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
                      "Generate csv submission file base on last model.")
@@ -114,20 +114,30 @@ def generate_padded_sequence(question1_list, question2_list, tokenizer):
     return data_1, data_2
 
 
-def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2):
+def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2, features_input):
+
+    features_dense = BatchNormalization()(features_input)
+    features_dense = Dense(200, activation="relu")(features_dense)
+    features_dense = Dropout(0.2)(features_dense)
+
     # Square difference
     addition = add([lstm_layer_lhs, lstm_layer_rhs])
     minus_lstm_layer_rhs = Lambda(lambda x: -x)(lstm_layer_rhs)
     merged = add([lstm_layer_lhs, minus_lstm_layer_rhs])
     merged = multiply([merged, merged])
-
     merged = concatenate([merged, addition])
     merged = Dropout(0.4)(merged)
+
+    merged = concatenate([merged, features_dense])
     merged = BatchNormalization()(merged)
     merged = GaussianNoise(0.1)(merged)
 
+    merged = Dense(150, activation="relu")(merged)
+    merged = Dropout(0.2)(merged)
+    merged = BatchNormalization()(merged)
+
     out = Dense(1, activation="sigmoid")(merged)
-    model = Model(inputs=[input_sequence_1, input_sequence_2], outputs=out)
+    model = Model(inputs=[input_sequence_1, input_sequence_2, features_input], outputs=out)
 
     if FLAGS.optimizer == "adam":
         optimizer = optimizers.Adam(lr=FLAGS.learning_rate)
@@ -173,13 +183,14 @@ def train(model, train_set):
                                     save_best_only=True,
                                     save_weights_only=True)
 
-    model.fit([train_set[0],train_set[1], train_set[2]],train_set[3],
-                        validation_split=FLAGS.validation_split,
-                        epochs=FLAGS.num_epochs,
-                        batch_size=FLAGS.batch_size,
-                        shuffle=True,
-                        callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
-                        verbose=1)
+    model.fit([train_set[0], train_set[1], train_set[2]],
+              train_set[3],
+              validation_split=FLAGS.validation_split,
+              epochs=FLAGS.num_epochs,
+              batch_size=FLAGS.batch_size,
+              shuffle=True,
+              callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+              verbose=1)
     print("'Best model from training saved: " + NOW_DATETIME + "_best_model.h5")
 
 
@@ -201,13 +212,14 @@ def train_extra(model, train_set):
                                        save_best_only=True,
                                        save_weights_only=True)
 
-    model.fit([train_set[0], train_set[1], train_set[2]], train_set[3],
-                        validation_split=FLAGS.validation_split,
-                        epochs=FLAGS.train_extra_num_epoch,
-                        batch_size=FLAGS.batch_size,
-                        shuffle=True,
-                        callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
-                        verbose=1)
+    model.fit([train_set[0], train_set[1], train_set[2]],
+              train_set[3],
+              validation_split=FLAGS.validation_split,
+              epochs=FLAGS.train_extra_num_epoch,
+              batch_size=FLAGS.batch_size,
+              shuffle=True,
+              callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+              verbose=1)
     print("'Best model from extra training saved: " + NOW_DATETIME + "_extra_train_best_model.h5")
 
 
@@ -223,37 +235,43 @@ def generate_csv_submission(test_set, model_type):
 
 
 def main():
-    print("Building embedding layer...")
     embedding_layer, train_labels, question1_list, question2_list, tokenizer = embedding\
         .process_data(FLAGS.word_embedding_path,
-                      FLAGS.raw_train_data_,
+                      FLAGS.raw_train_data,
                       FLAGS.embedding_vector_dimension,
                       FLAGS.max_sequence_length)
 
+    # Load nlp features for train data set.
+    print("Reading nlp features...")
+    train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
+
     lstm_layer = build_lstm_layer()
 
-    # Sequence padding to max sequence length
+    # Specifying model input shape
     input_sequence_1 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
     embedded_sequences_1 = embedding_layer(input_sequence_1)
 
     input_sequence_2 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
     embedded_sequences_2 = embedding_layer(input_sequence_2)
 
+    features_input = Input(shape=(train_nlp_features.shape[1],), dtype="float32")
+
     # Feeding embedded sequence to LSTM layers
     lstm_layer_lhs = lstm_layer(embedded_sequences_1)
     lstm_layer_rhs = lstm_layer(embedded_sequences_2)
 
     # Build a model
-    model = build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence_2)
+    model = build_model(lstm_layer_lhs,
+                        lstm_layer_rhs,
+                        input_sequence_1,
+                        input_sequence_2,
+                        features_input)
 
     # Padding sequence
     train_data_1, train_data_2 = generate_padded_sequence(
         question1_list,
         question2_list,
         tokenizer)
-
-    # Load nlp features for train data set.
-    train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
 
     # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
     if FLAGS.model_file_to_load is None:
@@ -264,7 +282,7 @@ def main():
 
     print("Read test.csv file...")
     # Read test data and do same for test data.
-    test = pd.read_csv(FLAGS.raw_test_data_)
+    test = pd.read_csv(FLAGS.raw_test_data)
     test["question1"] = test["question1"].fillna("").apply(features.clean_text)\
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
     test["question2"] = test["question2"].fillna("").apply(features.clean_text)\

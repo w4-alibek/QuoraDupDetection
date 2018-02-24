@@ -10,14 +10,15 @@ from nltk.tokenize import word_tokenize
 import pandas as pd
 import re
 import string
+from sklearn.model_selection import StratifiedKFold
 import tensorflow as tf
 import util
 import os, sys
 
 STOP_WORDS = stopwords.words("english")
 
-tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
-tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is stored.")
+# tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
+# tf.flags.DEFINE_string("raw_test_data", None, "Where the raw train data is stored.")
 
 FLAGS = tf.flags.FLAGS
 
@@ -65,7 +66,7 @@ def clean_text(text):
         try:
             text = text.replace(original, replaced)
         except UnicodeDecodeError:
-            print repr(text), repr(original), repr(replaced)
+            print(repr(text), repr(original), repr(replaced))
 
     text = re.sub('[“”\(\'…\)\!\^\"\.;:,\-\?？\{\}\[\]\\/\*@]', ' ', text)
     text = re.sub(r"([0-9]+)000000", r"\1m", text)
@@ -169,10 +170,10 @@ def extract_features(nlp_features):
 # train_nlp_features.drop(["id", "qid1", "qid2", "question1", "question2", "is_duplicate"],
 #                         axis=1,
 #                         inplace=True)
-# train_nlp_features.to_csv("data/nlp_features_train.csv", index=False)
+# train_nlp_features.to_csv("data/nlp_features_train_25000.csv", index=False)
 #
 # print("Extracting features for test...")
 # test_nlp_features = pd.read_csv(FLAGS.raw_test_data)
 # test_nlp_features = extract_features(test_nlp_features)
 # test_nlp_features.drop(["test_id", "question1", "question2"], axis=1, inplace=True)
-# test_nlp_features.to_csv("data/nlp_features_test.csv", index=False)
+# test_nlp_features.to_csv("data/nlp_features_test_25000.csv", index=False)
