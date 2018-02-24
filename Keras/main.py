@@ -180,8 +180,10 @@ def train(model, train_set):
     best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_model.h5")
     early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
     model_checkpoint = ModelCheckpoint(best_model_path,
-                                    save_best_only=True,
-                                    save_weights_only=True)
+                                       save_best_only=True,
+                                       save_weights_only=True)
+
+    print("Path to best model from training: " + best_model_path)
 
     model.fit([train_set[0], train_set[1], train_set[2]],
               train_set[3],
@@ -299,6 +301,8 @@ def main():
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
+        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_model.h5")
+        model.load_weights(best_model_path)
         generate_csv_submission(model, test_set, "")
 
     # Extra train so far existing model.
