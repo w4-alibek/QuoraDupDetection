@@ -12,7 +12,7 @@ import features
 def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequence_length):
     embeddings_index = read_data.read_GloVe(glove_embedding_path)
 
-    train = pd.read_csv(raw_train_data)
+    train = pd.read_csv(raw_train_data, encoding="utf-8")
 
     train["question1"] = train["question1"].fillna("").apply(features.clean_text) \
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
@@ -36,21 +36,21 @@ def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequen
     num_words =len(word_index) + 1
     embedding_matrix = np.zeros((num_words, embedding_dim))
 
-    count_none = 0
-    back_of_words = []
+    # count_none = 0
+    # back_of_words = []
     for word, i in word_index.items():
         embedding_vector = embeddings_index.get(word)
-        if embedding_vector is None:
-            count_none = count_none + 1
-            back_of_words.append(word)
+        # if embedding_vector is None:
+        #     count_none = count_none + 1
+        #     back_of_words.append(word)
 
         if embedding_vector is not None:
             # words not found in embedding index will be all-zeros.
             embedding_matrix[i] = embedding_vector
 
-    print('# not found words', count_none)
-    not_found_words = pd.DataFrame({"word": back_of_words})
-    not_found_words.to_csv("./with_norm.csv", index=False)
+    # print('# not found words', count_none)
+    # not_found_words = pd.DataFrame({"word": back_of_words})
+    # not_found_words.to_csv("./with_norm.csv", index=False, encoding="utf-8")
     # load pre-trained word embeddings into an Embedding layer
     # note that we set trainable = False so as to keep the embeddings fixed
     embedding_layer = Embedding(num_words,

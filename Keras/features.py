@@ -35,31 +35,37 @@ def word_net_lemmatize(text):
 
 
 def clean_text(text):
-    text = text\
-        .lower()\
-        .replace(",000,000", "m")\
-        .replace(",000", "k")\
-        .replace("′", "'")\
-        .replace("’", "'")\
-        .replace("won't", "will not")\
-        .replace("cannot", "can not")\
-        .replace("can't", "can not")\
-        .replace("n't", " not")\
-        .replace("what's", "what is")\
-        .replace("it's", "it is")\
-        .replace("'ve", " have")\
-        .replace("i'm", "i am")\
-        .replace("'re", " are")\
-        .replace("he's", "he is")\
-        .replace("she's", "she is")\
-        .replace("'s", " own")\
-        .replace("%", " percent ")\
-        .replace("₹", " rupee ")\
-        .replace("$", " dollar ")\
-        .replace("€", " euro ")\
-        .replace("'ll", " will")\
-        .replace("=", " equal ")\
-        .replace("+", " plus ")
+
+    r = ((u",000,000", u"m"),
+         (u",000", u"k"),
+         (u"′", u"'"),
+         (u"’", u"'"),
+         (u"won't", u"will not"),
+         (u"cannot", u"can not"),
+         (u"can't", u"can not"),
+         (u"n't", u" not"),
+         (u"what's", u"what is"),
+         (u"it's", u"it is"),
+         (u"'ve", u" have"),
+         (u"i'm", u"i am"),
+         (u"'re", u" are"),
+         (u"he's", u"he is"),
+         (u"she's", u"she is"),
+         (u"'s", u" own"),
+         (u"%", u" percent "),
+         (u"₹", u" rupee "),
+         (u"$", u" dollar "),
+         (u"€", u" euro "),
+         (u"'ll", u" will"),
+         (u"=", u" equal "),
+         (u"+", u" plus "))
+
+    text = text.lower()
+    for original, replaced in r:
+        try:
+            text = text.replace(original, replaced)
+        except UnicodeDecodeError:
+            print repr(text), repr(original), repr(replaced)
 
     text = re.sub('[“”\(\'…\)\!\^\"\.;:,\-\?？\{\}\[\]\\/\*@]', ' ', text)
     text = re.sub(r"([0-9]+)000000", r"\1m", text)
