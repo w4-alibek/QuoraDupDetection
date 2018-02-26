@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-refs: https://github.com/aerdem4/kaggle-quora-dup
+refs: https://github.com/aerdem4/kaggle-quora-dup/blob/master/nlp_feature_extraction.py
 """
 from fuzzywuzzy import fuzz
 from nltk.corpus import stopwords
@@ -140,12 +140,12 @@ def extract_features(nlp_features):
     print("token features...")
     token_features = nlp_features.apply(
         lambda x: get_token_features(x["question1"], x["question2"]), axis=1)
-    nlp_features["cwc_min"] = list(map(lambda x: x[0], token_features))
-    nlp_features["cwc_max"] = list(map(lambda x: x[1], token_features))
-    nlp_features["csc_min"] = list(map(lambda x: x[2], token_features))
-    nlp_features["csc_max"] = list(map(lambda x: x[3], token_features))
-    nlp_features["ctc_min"] = list(map(lambda x: x[4], token_features))
-    nlp_features["ctc_max"] = list(map(lambda x: x[5], token_features))
+    nlp_features["common_word_count_min"] = list(map(lambda x: x[0], token_features))
+    nlp_features["common_word_count_max"] = list(map(lambda x: x[1], token_features))
+    nlp_features["common_stop_count_min"] = list(map(lambda x: x[2], token_features))
+    nlp_features["common_stop_count_max"] = list(map(lambda x: x[3], token_features))
+    nlp_features["common_token_count_min"] = list(map(lambda x: x[4], token_features))
+    nlp_features["common_token_count_max"] = list(map(lambda x: x[5], token_features))
     nlp_features["last_word_eq"] = list(map(lambda x: x[6], token_features))
     nlp_features["first_word_eq"] = list(map(lambda x: x[7], token_features))
     nlp_features["abs_len_diff"] = list(map(lambda x: x[8], token_features))

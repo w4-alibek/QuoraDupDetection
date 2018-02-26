@@ -36,14 +36,14 @@ from keras.layers.merge import concatenate
 from keras.layers.merge import multiply
 from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
-from keras.models import load_model
 from keras.models import Model
+from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from time import gmtime, strftime
 import numpy
+import os
 import pandas as pd
 import tensorflow as tf
-import os
 
 import glove_embedding as embedding
 import features
@@ -65,6 +65,7 @@ tf.flags.DEFINE_integer("early_stopping_patience", 5,
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
+tf.flags.DEFINE_string("raw_train_non_nlp_features", None, "Where the raw train nlp features is stored")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
@@ -246,6 +247,8 @@ def main():
     # Load nlp features for train data set.
     print("Reading nlp features...")
     train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
+    train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features);
+    train_features = np.hstack(train_nlp_features, train_non_nlp_features)
 
     lstm_layer = build_lstm_layer()
 
@@ -256,7 +259,7 @@ def main():
     input_sequence_2 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
     embedded_sequences_2 = embedding_layer(input_sequence_2)
 
-    features_input = Input(shape=(train_nlp_features.shape[1],), dtype="float32")
+    features_input = Input(shape=(train_features.shape[1],), dtype="float32")
 
     # Feeding embedded sequence to LSTM layers
     lstm_layer_lhs = lstm_layer(embedded_sequences_1)
@@ -277,7 +280,7 @@ def main():
 
     # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
     if FLAGS.model_file_to_load is None:
-        train_set = [train_data_1,train_data_2, train_nlp_features, train_labels]
+        train_set = [train_data_1,train_data_2, train_features, train_labels]
         train(model, train_set)
     else:
         model.load_weights(FLAGS.model_file_to_load)
@@ -291,13 +294,14 @@ def main():
         .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
 
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
+    test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
+    test_features = np.hstack(test_nlp_features, test_non_nlp_features)
 
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
                                                         tokenizer)
     test_id = test["test_id"]
-
-    test_set = [test_data_1, test_data_2, test_nlp_features, test_id]
+    test_set = [test_data_1, test_data_2, test_features, test_id]
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
