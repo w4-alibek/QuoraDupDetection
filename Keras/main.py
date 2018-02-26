@@ -251,7 +251,7 @@ def main():
     print("Reading nlp features...")
     train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
     train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features);
-    train_features = np.hstack(train_nlp_features, train_non_nlp_features)
+    train_features = numpy.hstack(train_nlp_features, train_non_nlp_features)
 
     lstm_layer = build_lstm_layer()
 
@@ -298,7 +298,7 @@ def main():
 
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
     test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
-    test_features = np.hstack(test_nlp_features, test_non_nlp_features)
+    test_features = numpy.hstack(test_nlp_features, test_non_nlp_features)
 
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
