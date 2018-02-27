@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 NEIGHBOR_UPPER_BOUND = 5
-NB_CORES = 10
+NUMBERS_CORES = 10
 
 
 def get_kcore_dict(df):
@@ -31,12 +31,11 @@ def get_kcore_features(df, kcore_dict):
     return df
 
 
-def get_neighbors(train_df, test_df):
+def get_neighbors(data_set):
     neighbors = defaultdict(set)
-    for df in [train_df, test_df]:
-        for q1, q2 in zip(df["qid1"], df["qid2"]):
-            neighbors[q1].add(q2)
-            neighbors[q2].add(q1)
+    for q1, q2 in zip(data_set["qid1"], data_set["qid2"]):
+        neighbors[q1].add(q2)
+        neighbors[q2].add(q1)
     return neighbors
 
 

@@ -5,15 +5,19 @@ python main.py
 
 <REQUIRED FLAGS TO RUN>
 --raw_train_data ~chungshik/quora_data/data/train.csv
+--raw_train_nlp_features ~alibek/QuoraDupDetection/nlp_features_train.csv
+--raw_train_non_nlp_features ~alibek/QuoraDupDetection/non_nlp_features_train.csv
+--raw_test_data ~chungshik/quora_data/data/train.csv
+--raw_test_nlp_features ~alibek/QuoraDupDetection/nlp_features_test.csv
+--raw_test_non_nlp_features ~alibek/QuoraDupDetection/non_nlp_features_test.csv
 --word_embedding_path ~chungshik/quora_data/word_embeddings/glove.840B.300d.txt
 --embedding_vector_dimension 300
---path_save_best_model
+--path_save_best_model ~alibek/QuoraDupDetection/Keras/models
 
-<PREREQUISITE TO EACH OTHER FLAGS>
-###################################
---raw_test_data                 ###
---generate_csv_submission       ###
-###################################
+<OPTIONAL FLAGS TO RUN>
+--generate_csv_submission_best_model True
+--early_stopping_patience 50
+--learning_rate 0.0005
 
 <USE THIS FLAG ONLY WHEN GENERATING SUBMISSION FILE FROM SAVED MODEL.>
 --model_file_to_load
@@ -217,7 +221,9 @@ def main():
 
     # Load nlp features for train data set.
     print("Reading nlp features...")
-    train_features = pd.read_csv(FLAGS.raw_train_nlp_features)
+    train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
+    train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features);
+    train_features = numpy.hstack((train_nlp_features, train_non_nlp_features))
 
     lstm_layer = build_lstm_layer()
 
@@ -262,7 +268,9 @@ def main():
     test["question2"] = test["question2"].fillna("").apply(nlp.clean_text)\
         .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
 
-    test_features = pd.read_csv(FLAGS.raw_test_nlp_features)
+    test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
+    test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
+    test_features = numpy.hstack((test_nlp_features, test_non_nlp_features))
 
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],

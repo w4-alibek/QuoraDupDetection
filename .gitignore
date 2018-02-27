@@ -6,10 +6,10 @@ Keras/ensemble.py
 Keras/logs
 Keras/loss_history.txt
 Keras/models/*
-*.py
 Keras/predictions/*.csv
 *.csv
 *.pyc
 *.h5
 commond_line
-
+augmenter_main.py
+test.py
