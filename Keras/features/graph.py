@@ -17,7 +17,7 @@ def get_kcore_dict(df):
     g_nodes = np.array(g.nodes());
     df_output = pd.DataFrame(data=g_nodes, columns=["qid"])
     df_output["kcore"] = 0
-    for k in range(2, NB_CORES + 1):
+    for k in range(2, NUMBERS_CORES + 1):
         ck = nx.k_core(g, k=k).nodes()
         print("kcore", k)
         df_output.ix[df_output.qid.isin(ck), "kcore"] = k
