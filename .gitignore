@@ -13,3 +13,4 @@ Keras/predictions/*.csv
 commond_line
 augmenter_main.py
 test.py
+Keras/logs_extra
