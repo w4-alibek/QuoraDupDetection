@@ -37,7 +37,6 @@ from keras.layers.merge import multiply
 from keras.layers.noise import GaussianNoise
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
-from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from time import gmtime, strftime
 import numpy
@@ -46,7 +45,7 @@ import pandas as pd
 import tensorflow as tf
 
 import glove_embedding as embedding
-import features
+from features import nlp
 
 # Word embeddings
 tf.flags.DEFINE_string("word_embedding_path", '', "Where the word embedding vectors are located.")
@@ -78,8 +77,6 @@ tf.flags.DEFINE_string("raw_test_nlp_features", None, "Where the raw test nlp fe
 tf.flags.DEFINE_string("raw_test_non_nlp_features", None,
                        "Where the raw test non nlp features is stored.")
 tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
-                     "Generate csv submission file base on last model.")
-tf.flags.DEFINE_bool("generate_csv_submission_extra_best_model", False,
                      "Generate csv submission file base on last model.")
 
 # LSTM model
@@ -200,35 +197,6 @@ def train(model, train_set):
     print("'Best model from training saved: " + NOW_DATETIME + "_best_model.h5")
 
 
-def train_extra(model, train_set):
-    csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training_extra.log')
-    logging = TensorBoard(log_dir='./logs_extra',
-                          histogram_freq=0,
-                          batch_size=FLAGS.batch_size,
-                          write_graph=True,
-                          write_grads=False,
-                          write_images=False,
-                          embeddings_freq=0,
-                          embeddings_layer_names=None,
-                          embeddings_metadata=None)
-    best_model_path = os.path.join(FLAGS.path_save_best_model,
-                                   NOW_DATETIME + "_extra_train_best_model.h5")
-    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
-    model_checkpoint = ModelCheckpoint(best_model_path,
-                                       save_best_only=True,
-                                       save_weights_only=True)
-
-    model.fit([train_set[0], train_set[1], train_set[2]],
-              train_set[3],
-              validation_split=FLAGS.validation_split,
-              epochs=FLAGS.train_extra_num_epoch,
-              batch_size=FLAGS.batch_size,
-              shuffle=True,
-              callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
-              verbose=1)
-    print("'Best model from extra training saved: " + NOW_DATETIME + "_extra_train_best_model.h5")
-
-
 def generate_csv_submission(model, test_set, model_type):
         # Testing and generating submission csv
         print("Testing model...")
@@ -249,9 +217,7 @@ def main():
 
     # Load nlp features for train data set.
     print("Reading nlp features...")
-    train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
-    train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features);
-    train_features = numpy.hstack((train_nlp_features, train_non_nlp_features))
+    train_features = pd.read_csv(FLAGS.raw_train_nlp_features)
 
     lstm_layer = build_lstm_layer()
 
@@ -291,14 +257,12 @@ def main():
     print("Read test.csv file...")
     # Read test data and do same for test data.
     test = pd.read_csv(FLAGS.raw_test_data)
-    test["question1"] = test["question1"].fillna("").apply(features.clean_text)\
-        .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
-    test["question2"] = test["question2"].fillna("").apply(features.clean_text)\
-        .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
+    test["question1"] = test["question1"].fillna("").apply(nlp.clean_text)\
+        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+    test["question2"] = test["question2"].fillna("").apply(nlp.clean_text)\
+        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
 
-    test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
-    test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
-    test_features = numpy.hstack((test_nlp_features, test_non_nlp_features))
+    test_features = pd.read_csv(FLAGS.raw_test_nlp_features)
 
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
@@ -312,22 +276,6 @@ def main():
         model.load_weights(best_model_path)
         generate_csv_submission(model, test_set, "")
 
-    # Extra train so far existing model.
-    if FLAGS.train_extra_num_epoch > 0:
-        # Load best model from training.
-        if (FLAGS.model_file_to_load is None):
-            best_model_path = os.path.join(FLAGS.path_save_best_model,
-                                           NOW_DATETIME + "_best_model.h5")
-            model.load_weights(best_model_path)
-        num_validation_samples = int(FLAGS.validation_split * train_data_1.shape[0])
-        train_set = [train_data_1[-num_validation_samples:],
-                     train_data_2[-num_validation_samples:],
-                     train_labels[-num_validation_samples:]]
-        train_extra(model, train_set)
-
-    # Generate csv file for submission with extra trained best model
-    if FLAGS.generate_csv_submission_extra_best_model:
-        generate_csv_submission(model, test_set, "_extra")
 
 if __name__ == "__main__":
     main()

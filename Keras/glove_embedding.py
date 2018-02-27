@@ -4,10 +4,10 @@ from keras.layers import Embedding
 from keras.preprocessing.text import Tokenizer
 import numpy as np
 import pandas as pd
-from nltk.stem import WordNetLemmatizer
 
 import read_data
-import features
+from features import nlp
+
 
 def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequence_length):
     print("Reading GloVe embedding...")
@@ -15,10 +15,10 @@ def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequen
     print("Reading train data set...")
     train = pd.read_csv(raw_train_data)
     print("Text processing...")
-    train["question1"] = train["question1"].fillna("").apply(features.clean_text) \
-        .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
-    train["question2"] = train["question2"].fillna("").apply(features.clean_text)\
-        .apply(features.remove_stop_words_and_punctuation).apply(features.word_net_lemmatize)
+    train["question1"] = train["question1"].fillna("").apply(nlp.clean_text) \
+        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+    train["question2"] = train["question2"].fillna("").apply(nlp.clean_text)\
+        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
 
     labels = np.array(train["is_duplicate"])  # list of label ids
     question1_list = np.array(train["question1"])
