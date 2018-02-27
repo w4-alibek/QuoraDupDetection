@@ -88,5 +88,5 @@ def main():
     test_df.loc[:, cols].to_csv(flags.path_test_non_nlp_data, index=False)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

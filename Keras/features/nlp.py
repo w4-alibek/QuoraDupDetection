@@ -12,7 +12,6 @@ import re
 import string
 from sklearn.model_selection import StratifiedKFold
 import tensorflow as tf
-import util
 import os, sys
 import distance
 
@@ -181,5 +180,5 @@ def main ():
     test_nlp_features.drop(["test_id", "question1", "question2"], axis=1, inplace=True)
     test_nlp_features.to_csv("data/nlp_features_test_25000.csv", index=False)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
