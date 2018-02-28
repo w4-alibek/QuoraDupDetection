@@ -127,7 +127,7 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
 
     features_dense = BatchNormalization()(features_input)
     features_dense = Dense(200, activation="relu")(features_dense)
-    features_dense = Dropout(Flags.layer_dropout)(features_dense)
+    features_dense = Dropout(FLAGS.layer_dropout)(features_dense)
 
     # Square difference
     addition = add([lstm_layer_lhs, lstm_layer_rhs])
@@ -201,7 +201,7 @@ def train(model, train_set):
                                            save_best_only=True,
                                            save_weights_only=True)
 
-    print("Path to best model from training: " + best_model_path)
+    print("Path to best model from training: " + FLAGS.path_save_best_model + "best_~~~~.h5")
 
     model.fit([train_set[0], train_set[1], train_set[2]],
               train_set[3],
@@ -223,7 +223,7 @@ def generate_csv_submission(model, test_set, model_type):
         preds = model.predict([test_set[0], test_set[1], test_set[2]],
                               batch_size=FLAGS.batch_size,
                               verbose=1)
-        print("Generating preds_"+ NOW_DATETIME + ".csv ...")
+        print("Generating preds_"+ NOW_DATETIME + model_type + ".csv ...")
         submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test_set[3]})
         submission.to_csv("predictions/preds_"+ NOW_DATETIME + model_type + ".csv", index=False)
 
@@ -298,10 +298,10 @@ def main():
     if FLAGS.generate_csv_submission_best_model:
         best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_loss.h5")
         model.load_weights(best_model_path)
-        generate_csv_submission(model, test_set, "")
+        generate_csv_submission(model, test_set, "_best_loss")
         best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_acc.h5")
         model.load_weights(best_model_path)
-        generate_csv_submission(model, test_set, "")
+        generate_csv_submission(model, test_set, "_best_acc")
 
 
 if __name__ == "__main__":
