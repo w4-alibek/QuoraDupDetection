@@ -65,7 +65,7 @@ tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
 tf.flags.DEFINE_integer("train_extra_num_epoch", 0, "Train the model full data set.")
 tf.flags.DEFINE_integer("early_stopping_patience", 5,
                         "Number of epochs with no improvement after which training will be stopped")
-tf.flags.DEFINE_integer("early_stopping_option", "val_loss", "Quantity to be monitored")
+tf.flags.DEFINE_string("early_stopping_option", "val_loss", "Quantity to be monitored")
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
@@ -187,9 +187,9 @@ def train(model, train_set):
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
     best_loss_model = os.path.join(FLAGS.path_save_best_model,
-                                   NOW_DATETIME + "{epoch: 02d}-{val_loss: .2f}-best_loss.h5")
+                                   NOW_DATETIME + "_best_loss.h5")
     best_acc_model = os.path.join(FLAGS.path_save_best_model,
-                                  NOW_DATETIME + "{epoch: 02d}-{val_loss: .2f}-best_acc.h5")
+                                  NOW_DATETIME + "_best_acc.h5")
     early_stopping = EarlyStopping(monitor=FLAGS.early_stopping_option,
                                    patience=FLAGS.early_stopping_patience)
     model_checkpoint_loss = ModelCheckpoint(best_loss_model,
@@ -214,7 +214,7 @@ def train(model, train_set):
                          model_checkpoint_acc,
                          logging, csv_logger],
               verbose=1)
-    print("'Best model from training saved: " + NOW_DATETIME + "_best_model.h5")
+    print("'Best model from training saved: " + NOW_DATETIME + "_best_~~~~.h5")
 
 
 def generate_csv_submission(model, test_set, model_type):
@@ -296,7 +296,10 @@ def main():
 
     # Generate csv file for submission with best model
     if FLAGS.generate_csv_submission_best_model:
-        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_model.h5")
+        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_loss.h5")
+        model.load_weights(best_model_path)
+        generate_csv_submission(model, test_set, "")
+        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_acc.h5")
         model.load_weights(best_model_path)
         generate_csv_submission(model, test_set, "")
 
