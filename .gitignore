@@ -1,5 +1,6 @@
 Keras/glove.6B.50d.txt
 Keras/train_data/*
+Keras/data/full_size_features/*py
 Keras/ensemble.py
 .idea/
 *log

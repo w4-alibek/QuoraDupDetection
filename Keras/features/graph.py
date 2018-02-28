@@ -1,5 +1,5 @@
 from collections import defaultdict
-import networkx as nx
+import networkx
 import pandas as pd
 import numpy as np
 
@@ -7,10 +7,10 @@ NEIGHBOR_UPPER_BOUND = 5
 NUMBERS_CORES = 10
 
 
-def get_kcore_dict(df):
-    g = nx.Graph()
-    g.add_nodes_from(df.qid1)
-    edges = list(df[["qid1", "qid2"]].to_records(index=False))
+def get_kcore_dict(data_set):
+    g = networkx.Graph()
+    g.add_nodes_from(data_set.qid1)
+    edges = list(data_set[["qid1", "qid2"]].to_records(index=False))
     g.add_edges_from(edges)
     g.remove_edges_from(g.selfloop_edges())
 
@@ -18,7 +18,7 @@ def get_kcore_dict(df):
     df_output = pd.DataFrame(data=g_nodes, columns=["qid"])
     df_output["kcore"] = 0
     for k in range(2, NUMBERS_CORES + 1):
-        ck = nx.k_core(g, k=k).nodes()
+        ck = networkx.k_core(g, k=k).nodes()
         print("kcore", k)
         df_output.ix[df_output.qid.isin(ck), "kcore"] = k
 
@@ -39,9 +39,13 @@ def get_neighbors(data_set):
     return neighbors
 
 
-def get_neighbor_features(df, neighbors):
-    common_nc = df.apply(lambda x: len(neighbors[x.qid1].intersection(neighbors[x.qid2])), axis=1)
-    min_nc = df.apply(lambda x: min(len(neighbors[x.qid1]), len(neighbors[x.qid2])), axis=1)
-    df["common_neighbor_ratio"] = common_nc / min_nc
-    df["common_neighbor_count"] = common_nc.apply(lambda x: min(x, NEIGHBOR_UPPER_BOUND))
-    return df
+def get_neighbor_features(question_dataset, neighbors):
+    common_neighbors = question_dataset.apply(
+        lambda x: len(neighbors[x.qid1].intersection(neighbors[x.qid2])), axis=1)
+    min_num_neighbors = question_dataset.apply(
+        lambda x: min(len(neighbors[x.qid1]), len(neighbors[x.qid2])), axis=1)
+
+    question_dataset["common_neighbor_ratio"] = common_neighbors / min_num_neighbors
+    question_dataset["common_neighbor_count"] = common_neighbors.apply(
+        lambda x: min(x, NEIGHBOR_UPPER_BOUND))
+    return question_dataset

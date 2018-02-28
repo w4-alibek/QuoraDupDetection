@@ -65,6 +65,7 @@ tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
 tf.flags.DEFINE_integer("train_extra_num_epoch", 0, "Train the model full data set.")
 tf.flags.DEFINE_integer("early_stopping_patience", 5,
                         "Number of epochs with no improvement after which training will be stopped")
+tf.flags.DEFINE_integer("early_stopping_option", "val_loss", "Quantity to be monitored")
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
 tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
@@ -92,6 +93,9 @@ tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
 tf.flags.DEFINE_string("model_file_to_load", None, "Where the model weights file is located")
 tf.flags.DEFINE_string("model", "base_model",
                        "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
+tf.flags.DEFINE_string("layer_dropout", 0.2,
+                       "Applies Dropout to the Keras input layer.")
+
 
 FLAGS = tf.flags.FLAGS
 NOW_DATETIME = strftime("%Y-%m-%d-%H-%M-%S", gmtime())
@@ -123,7 +127,7 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
 
     features_dense = BatchNormalization()(features_input)
     features_dense = Dense(200, activation="relu")(features_dense)
-    features_dense = Dropout(0.2)(features_dense)
+    features_dense = Dropout(Flags.layer_dropout)(features_dense)
 
     # Square difference
     addition = add([lstm_layer_lhs, lstm_layer_rhs])
@@ -131,14 +135,14 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
     merged = add([lstm_layer_lhs, minus_lstm_layer_rhs])
     merged = multiply([merged, merged])
     merged = concatenate([merged, addition])
-    merged = Dropout(0.4)(merged)
+    merged = Dropout(FLAGS.layer_dropout)(merged)
 
     merged = concatenate([merged, features_dense])
     merged = BatchNormalization()(merged)
     merged = GaussianNoise(0.1)(merged)
 
     merged = Dense(150, activation="relu")(merged)
-    merged = Dropout(0.2)(merged)
+    merged = Dropout(FLAGS.layer_dropout)(merged)
     merged = BatchNormalization()(merged)
 
     out = Dense(1, activation="sigmoid")(merged)
@@ -182,11 +186,20 @@ def train(model, train_set):
                         embeddings_freq=0,
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
-    best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_model.h5")
-    early_stopping = EarlyStopping(monitor="val_loss", patience=FLAGS.early_stopping_patience)
-    model_checkpoint = ModelCheckpoint(best_model_path,
-                                       save_best_only=True,
-                                       save_weights_only=True)
+    best_loss_model = os.path.join(FLAGS.path_save_best_model,
+                                   NOW_DATETIME + "{epoch: 02d}-{val_loss: .2f}-best_loss.h5")
+    best_acc_model = os.path.join(FLAGS.path_save_best_model,
+                                  NOW_DATETIME + "{epoch: 02d}-{val_loss: .2f}-best_acc.h5")
+    early_stopping = EarlyStopping(monitor=FLAGS.early_stopping_option,
+                                   patience=FLAGS.early_stopping_patience)
+    model_checkpoint_loss = ModelCheckpoint(best_loss_model,
+                                           monitor='val_loss',
+                                           save_best_only=True,
+                                           save_weights_only=True)
+    model_checkpoint_acc = ModelCheckpoint(best_acc_model,
+                                           monitor='val_acc',
+                                           save_best_only=True,
+                                           save_weights_only=True)
 
     print("Path to best model from training: " + best_model_path)
 
@@ -196,7 +209,10 @@ def train(model, train_set):
               epochs=FLAGS.num_epochs,
               batch_size=FLAGS.batch_size,
               shuffle=True,
-              callbacks=[early_stopping, model_checkpoint, logging, csv_logger],
+              callbacks=[early_stopping,
+                         model_checkpoint_loss,
+                         model_checkpoint_acc,
+                         logging, csv_logger],
               verbose=1)
     print("'Best model from training saved: " + NOW_DATETIME + "_best_model.h5")
 
@@ -222,7 +238,7 @@ def main():
     # Load nlp features for train data set.
     print("Reading nlp features...")
     train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
-    train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features);
+    train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features)
     train_features = numpy.hstack((train_nlp_features, train_non_nlp_features))
 
     lstm_layer = build_lstm_layer()
