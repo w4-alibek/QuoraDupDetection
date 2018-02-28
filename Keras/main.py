@@ -93,7 +93,7 @@ tf.flags.DEFINE_float("zoneout", 0.2, "Apply zoneout (dropout) to F gate")
 tf.flags.DEFINE_string("model_file_to_load", None, "Where the model weights file is located")
 tf.flags.DEFINE_string("model", "base_model",
                        "Name of a model to run. One of 'base_model', 'bidirectional_rnn', 'qrnn'.")
-tf.flags.DEFINE_string("layer_dropout", 0.2,
+tf.flags.DEFINE_float("layer_dropout", 0.2,
                        "Applies Dropout to the Keras input layer.")
 
 
