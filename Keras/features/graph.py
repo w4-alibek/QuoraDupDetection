@@ -7,10 +7,10 @@ NEIGHBOR_UPPER_BOUND = 5
 NUMBERS_CORES = 10
 
 
-def get_kcore_dict(data_set):
+def get_kcore_dict(dataset):
     g = networkx.Graph()
-    g.add_nodes_from(data_set.qid1)
-    edges = list(data_set[["qid1", "qid2"]].to_records(index=False))
+    g.add_nodes_from(dataset.qid1)
+    edges = list(dataset[["qid1", "qid2"]].to_records(index=False))
     g.add_edges_from(edges)
     g.remove_edges_from(g.selfloop_edges())
 

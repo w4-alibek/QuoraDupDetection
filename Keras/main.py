@@ -280,9 +280,9 @@ def main():
     # Read test data and do same for test data.
     test = pd.read_csv(FLAGS.raw_test_data)
     test["question1"] = test["question1"].fillna("").apply(nlp.clean_text)\
-        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
     test["question2"] = test["question2"].fillna("").apply(nlp.clean_text)\
-        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
 
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
     test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)

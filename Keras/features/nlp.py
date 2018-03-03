@@ -32,7 +32,7 @@ def word_net_lemmatize(text):
     return ' '.join([lemmatize_word(w) for w in text.split()])
 
 
-def clean_text(text):
+def clean_text(text, convert_str = True):
     replacement = ((u",000,000", u"m"),
                    (u",000", u"k"),
                    (u"′", u"'"),
@@ -68,10 +68,12 @@ def clean_text(text):
     u_text = re.sub(r"([0-9]+)000000", r"\1m", u_text)
     u_text = re.sub(r"([0-9]+)000", r"\1k", u_text)
 
-    return str(u_text)
+    if convert_str:
+        return str(u_text)
+    else:
+        return u_text
 
-
-def remove_stop_words_and_punctuation(text):
+def remove_stop_words(text, joinTokens = True):
     """Given text as string, removes stop words from text and
     return list of words without stop word.
     """
@@ -80,7 +82,10 @@ def remove_stop_words_and_punctuation(text):
     stop_words = set(stop_words)
     word_tokens = word_tokenize(text)
     filtered_words = [w for w in word_tokens if not w in stop_words]
-    return ' '.join(filtered_words)
+    if joinTokens:
+        return ' '.join(filtered_words)
+    else:
+        return filtered_words
 
 def get_token_features(question1, question2):
     """Generate NLP features for test and train data set."""
@@ -161,3 +166,41 @@ def extract_features(nlp_features):
         lambda x: get_longest_substr_ratio(x["question1"], x["question2"]), axis=1)
 
     return nlp_features
+
+def _subliner_term_frequency(word, tokenized_words):
+    """Given sentence as list of the words.
+    Return sublinear word freq
+    """
+    count = tokenized_words.count(word)
+    if count == 0:
+        return 0
+    return 1 + math.log(count)
+
+def _inverse_document_frequencies(tokenized_sentences):
+    """tokenized_sentences: list [[w00...wN0],...,[w0...wNK]] and sentences as list of the word.
+    Return list freqs of the sentence with the specific word
+    """
+    idf_values = {}
+    set_of_words = set([word for sentence in tokenized_sentences for word in sentence])
+    for word in set_of_words:
+        contains_token = 0
+        for sentence in tokenized_sentences:
+            contains_token += word in sentence
+        idf_values[word] = 1 + math.log(len(tokenized_sentences)/contains_token)
+    return idf_values
+
+def tfxidf(sentences):
+    """Given the [[w00...wN0],...,[w0...wNK]] and sentences as list of the word.
+    Return [[w00f...wM0f],...,[w0Kf...wMKf]] every wmkf means word freq for sentence
+    """
+    tokenized_sentences = [remove_stop_words(sentence, False) for sentence in sentences]
+    inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences)
+    tfidf_sentences = []
+
+    for tokenized_sentence in tokenized_sentences:
+        sentence_tfidf = []
+        for word in inverse_document_frequencies.keys():
+            subliner_term_frequency = _subliner_term_frequency(word, tokenized_sentence)
+            sentence_tfidf.append(subliner_term_frequency * inverse_document_frequencies[word])
+        tfidf_sentences.append(sentence_tfidf)
+    return tfidf_sentences

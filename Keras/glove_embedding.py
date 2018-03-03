@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import ordereddict
 from keras.layers import Embedding
 from keras.preprocessing.text import Tokenizer
 import numpy as np
@@ -16,9 +17,9 @@ def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequen
     train = pd.read_csv(raw_train_data)
     print("Text processing...")
     train["question1"] = train["question1"].fillna("").apply(nlp.clean_text) \
-        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
     train["question2"] = train["question2"].fillna("").apply(nlp.clean_text)\
-        .apply(nlp.remove_stop_words_and_punctuation).apply(nlp.word_net_lemmatize)
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
 
     labels = np.array(train["is_duplicate"])  # list of label ids
     question1_list = np.array(train["question1"])
@@ -28,6 +29,14 @@ def process_data(glove_embedding_path, raw_train_data, embedding_dim, max_sequen
     # finally, vectorize the text samples into a 2D integer tensor
     tokenizer = Tokenizer(filters="")
     tokenizer.fit_on_texts(np.append(question1_list, question2_list))
+    word_freq = tokenizer.word_counts
+    word_freq = list(sorted(word_freq.iteritems(),
+                            key=lambda x: x[1],
+                            reverse=True))
+
+    word_freq = word_freq[:10]
+
+    print(word_freq)
 
     word_index = tokenizer.word_index
     print('Found %s unique tokens.' % len(word_index))
