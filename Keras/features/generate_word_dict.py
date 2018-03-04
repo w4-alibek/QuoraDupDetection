@@ -33,7 +33,7 @@ def create_word_dict():
     train["question2"] = train["question2"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
         .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
 
-    print("Building question hash...")
+    print("Building word dictinary from train data ...")
     question1_list = np.array(train["question1"])
     question2_list = np.array(train["question2"])
 
@@ -46,6 +46,9 @@ def create_word_dict():
     word_freq = list(sorted(word_freq.iteritems(),
                             key=lambda x: x[1],
                             reverse=True))
+
+    print "Number of unique words: ", len(word_freq)
+
     # Get top 2000 words
     word_freq = word_freq[:2000]
 
@@ -63,7 +66,6 @@ def create_word_dict():
     top_words = pd.DataFrame(word_freq)[0].drop_duplicates()
     top_words.reset_index(inplace=True, drop=True)
 
-    print "Number of unique words: ", len(top_words)
     return top_words, train, word_freq, freq_dict
 
 
@@ -161,7 +163,7 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
 
 
 def preprocess_test_data(set_of_words):
-    print("Reading train.csv...")
+    print("Reading test.csv...")
     test = pd.read_csv(FLAGS.raw_test_data)
     print("Cleaning quesitons...")
     test["question1"] = test["question1"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
@@ -178,10 +180,12 @@ def preprocess_test_data(set_of_words):
 def main():
     graph, set_of_words, word_dict, train, word_freq = build_graph()
 
+    print "Generating train features ..."
     generate_feature(graph, word_dict, train, word_freq, "train")
 
     test = preprocess_test_data(set_of_words)
 
+    print "Generating test features ..."
     generate_feature(graph, word_dict, test, word_freq, "test")
 
 
