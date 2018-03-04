@@ -98,7 +98,7 @@ def build_graph():
     print "maximum weight from edge building", max_weight
     return graph, set_of_words, word_dict, dataset, word_freq
 
-top_7_words
+# top_7_words
 
 def generate_feature(graph, word_dict, dataset, word_freq, category):
     # Now compute the actual feature after preprocess.
@@ -106,7 +106,7 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
     max_edge_weight = 1.0
     for question1, question2 in np.stack((dataset["question1"], dataset["question2"]), axis=-1):
         feature_weight = 0.0
-        word_list_1 = top_7_words(word_freq, question1.split())
+        # word_list_1 = top_7_words(word_freq, question1.split())
         for word_q1 in question1.split():
             for word_q2 in question2.split():
                 node_a = word_dict[word_q1]
