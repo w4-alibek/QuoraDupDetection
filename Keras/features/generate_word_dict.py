@@ -56,7 +56,7 @@ def create_word_dict():
     top_words.reset_index(inplace=True, drop=True)
 
     print("Number of unique words:", len(top_words))
-    return top_words, train, set_of_words
+    return top_words, train, set_of_words, word_freq
 
 
 def normalize_feature(feature_weight, max_weight):
@@ -65,7 +65,7 @@ def normalize_feature(feature_weight, max_weight):
 
 def build_graph():
     max_weight = -109000000;
-    top_words, dataset, set_of_words = create_word_dict()
+    top_words, dataset, set_of_words, word_freq = create_word_dict()
     word_dict = pd.Series(top_words.index.values, index=top_words.values).to_dict()
     print (word_dict["best"])
     graph = networkx.MultiGraph()
@@ -95,16 +95,18 @@ def build_graph():
                 else:
                     graph.add_edge(node_a, node_b, weight=edge_weight)
 
-    print "maximum weight from edge building"
-    return graph, set_of_words, word_dict, dataset
+    print "maximum weight from edge building", max_weight
+    return graph, set_of_words, word_dict, dataset, word_freq
 
+top_7_words
 
-def generate_feature(graph, word_dict, dataset, category):
+def generate_feature(graph, word_dict, dataset, word_freq, category):
     # Now compute the actual feature after preprocess.
     feature = []
     max_edge_weight = 1.0
     for question1, question2 in np.stack((dataset["question1"], dataset["question2"]), axis=-1):
         feature_weight = 0.0
+        word_list_1 = top_7_words(word_freq, question1.split())
         for word_q1 in question1.split():
             for word_q2 in question2.split():
                 node_a = word_dict[word_q1]
@@ -146,13 +148,13 @@ def preprocess_test_data(set_of_words):
 
 
 def main():
-    graph, set_of_words, word_dict, train = build_graph()
+    graph, set_of_words, word_dict, train, word_freq = build_graph()
 
-    generate_feature(graph, word_dict, train, "train")
+    generate_feature(graph, word_dict, train, word_freq, "train")
 
     test = preprocess_test_data(set_of_words)
 
-    generate_feature(graph, word_dict, test, "test")
+    generate_feature(graph, word_dict, test, word_freq, "test")
 
 
 if __name__ == "__main__":
