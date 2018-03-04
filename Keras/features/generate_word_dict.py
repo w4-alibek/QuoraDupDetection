@@ -64,6 +64,7 @@ def normalize_feature(feature_weight, max_weight):
 
 
 def build_graph():
+    max_weight = -109000000;
     top_words, dataset, set_of_words = create_word_dict()
     word_dict = pd.Series(top_words.index.values, index=top_words.values).to_dict()
     print (word_dict["best"])
@@ -89,9 +90,12 @@ def build_graph():
                 if graph.has_edge(node_a, node_b):
                     graph[node_a][node_b][0]['weight'] = graph[node_a][node_b][0]['weight'] \
                                                          + edge_weight
+                    max_weight = max(max_weight, graph[node_a][node_b][0]['weight'])
 
                 else:
                     graph.add_edge(node_a, node_b, weight=edge_weight)
+
+    print "maximum weight from edge building"
     return graph, set_of_words, word_dict, dataset
 
 
