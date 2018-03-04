@@ -77,7 +77,7 @@ def build_graph():
                       dataset["is_duplicate"]), axis=-1):
         for word_q1 in question1.split():
             for word_q2 in question2.split():
-                edge_weight = (1 if is_duplicate else -1)
+                edge_weight = (1 if is_duplicate else -1) / 6210.0
                 node_a = word_dict[word_q1]
                 node_b = word_dict[word_q2]
 
@@ -90,7 +90,7 @@ def build_graph():
                 if graph.has_edge(node_a, node_b):
                     graph[node_a][node_b][0]['weight'] = graph[node_a][node_b][0]['weight'] \
                                                          + edge_weight
-                    max_weight = max(max_weight, graph[node_a][node_b][0]['weight'])
+                    max_weight = max(max_weight, abs(graph[node_a][node_b][0]['weight']))
 
                 else:
                     graph.add_edge(node_a, node_b, weight=edge_weight)
