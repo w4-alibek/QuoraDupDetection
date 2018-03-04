@@ -159,9 +159,14 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
     feature = [normalize_feature(features_weight, max_edge_weight) for features_weight in feature]
 
     # Save generated features for category("test" or "train")
-    save_dict = pd.DataFrame({"edge_feature": feature})
+    save_dict = pd.DataFrame()
+
+    feature_col = ["word1", "word2", "word3", "word4", "word5", "word6", "word7",
+                   "word8", "word9", "word10", "word11", "word12", "word13", "word14"]
+    for index in range(len(feature_col)):
+        save_dict[feature_col[index]] = [column[index] for column in feature]
     save_path = os.path.join(FLAGS.save_word_edge_features_path+"edge_feature_"+category+".csv")
-    save_dict.to_csv(save_path)
+    save_dict.to_csv(save_path, index=False)
 
     print "Maximum feature weight from generate feature:", max_edge_weight
 
