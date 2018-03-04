@@ -69,8 +69,8 @@ def create_word_dict():
     return top_words, train, word_freq, freq_dict
 
 
-def normalize_feature(feature_weight, max_weight):
-    return feature_weight/max_weight
+def normalize_feature(features_weight, max_weight):
+    return [(feature_weight/max_weight) for feature_weight in features_weight]
 
 
 def build_graph():
@@ -126,17 +126,17 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
     feature = []
     max_edge_weight = -100000000
     for question1, question2 in np.stack((dataset["question1"], dataset["question2"]), axis=-1):
-        feature_weight = 0.0
+        feature_weight = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         # Get top 7 words from question1 and question2
         top_words_1 = top_7_words(word_freq, question1.split())
         top_words_2 = top_7_words(word_freq, question2.split())
 
         # Generate feature for question comparison
-        for word_q1 in top_words_1:
-            for word_q2 in top_words_2:
-                node_a = word_dict[word_q1]
-                node_b = word_dict[word_q2]
+        for index_1 in range(len(top_words_1)):
+            for index_2 in range(len(top_words_2)):
+                node_a = word_dict[top_words_1[index_1]]
+                node_b = word_dict[top_words_2[index_2]]
 
                 # Make always node_a <= node_b
                 if node_a > node_b:
@@ -145,14 +145,18 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
                     node_b = temp
 
                 if graph.has_edge(node_a, node_b):
-                    feature_weight = feature_weight + graph[node_a][node_b][0]['weight']
+                    feature_weight[index_1] = feature_weight[index_1] + \
+                                              graph[node_a][node_b][0]['weight']
+                    feature_weight[7 + index_2] = feature_weight[index_2] + \
+                                                  graph[node_a][node_b][0]['weight']
+
 
         # Get max edge weight for normalize edge weights
-        max_edge_weight = max(abs(feature_weight), max_edge_weight)
+        max_edge_weight = max(max([abs(weight) for weight in feature_weight]),max_edge_weight)
         feature.append(feature_weight)
 
     # Normalize edge weights
-    feature = [normalize_feature(feature_weight, max_edge_weight) for feature_weight in feature]
+    feature = [normalize_feature(features_weight, max_edge_weight) for features_weight in feature]
 
     # Save generated features for category("test" or "train")
     save_dict = pd.DataFrame({"edge_feature": feature})
