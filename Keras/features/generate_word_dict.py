@@ -63,7 +63,7 @@ def create_word_dict():
     top_words = pd.DataFrame(word_freq)[0].drop_duplicates()
     top_words.reset_index(inplace=True, drop=True)
 
-    print("Number of unique words:", len(top_words))
+    print "Number of unique words: ", len(top_words)
     return top_words, train, word_freq, freq_dict
 
 
@@ -74,8 +74,11 @@ def normalize_feature(feature_weight, max_weight):
 def build_graph():
     max_weight = -100000000
     top_words, dataset, set_of_words, freq_dict = create_word_dict()
+
+    # Generate word dictinary
     word_dict = pd.Series(top_words.index.values, index=top_words.values).to_dict()
-    print (word_dict["best"])
+
+    # Create graph
     graph = networkx.MultiGraph()
     graph.add_nodes_from(top_words.index.values)
 
