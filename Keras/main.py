@@ -24,6 +24,7 @@ python main.py
 """
 from __future__ import print_function
 
+from sklearn.model_selection import StratifiedKFold
 from keras import optimizers
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
@@ -114,11 +115,10 @@ def build_lstm_layer():
 
 
 def generate_padded_sequence(question1_list, question2_list, tokenizer):
-    sequences1 = tokenizer.texts_to_sequences(question1_list)
-    sequences2 = tokenizer.texts_to_sequences(question2_list)
-
-    data_1 = pad_sequences(sequences1, maxlen=FLAGS.max_sequence_length)
-    data_2 = pad_sequences(sequences2, maxlen=FLAGS.max_sequence_length)
+    data_1 = pad_sequences(tokenizer.texts_to_sequences(question1_list),
+                           maxlen=FLAGS.max_sequence_length)
+    data_2 = pad_sequences(tokenizer.texts_to_sequences(question2_list),
+                           maxlen=FLAGS.max_sequence_length)
 
     return data_1, data_2
 
@@ -175,7 +175,7 @@ def build_model(lstm_layer_lhs, lstm_layer_rhs, input_sequence_1, input_sequence
     return model
 
 
-def train(model, train_set):
+def train(model, train_set, val_set, model_count):
     csv_logger = CSVLogger('./tmp/' + NOW_DATETIME + '_training.log')
     logging = TensorBoard(log_dir='./logs',
                         histogram_freq=0,
@@ -187,45 +187,45 @@ def train(model, train_set):
                         embeddings_layer_names=None,
                         embeddings_metadata=None)
     best_loss_model = os.path.join(FLAGS.path_save_best_model,
-                                   NOW_DATETIME + "_best_loss.h5")
-    best_acc_model = os.path.join(FLAGS.path_save_best_model,
-                                  NOW_DATETIME + "_best_acc.h5")
+                                   NOW_DATETIME+"_"+str(model_count)+".h5")
+    # best_acc_model = os.path.join(FLAGS.path_save_best_model,
+    #                               NOW_DATETIME + "_best_acc.h5")
     early_stopping = EarlyStopping(monitor=FLAGS.early_stopping_option,
                                    patience=FLAGS.early_stopping_patience)
     model_checkpoint_loss = ModelCheckpoint(best_loss_model,
                                            monitor='val_loss',
                                            save_best_only=True,
                                            save_weights_only=True)
-    model_checkpoint_acc = ModelCheckpoint(best_acc_model,
-                                           monitor='val_acc',
-                                           save_best_only=True,
-                                           save_weights_only=True)
+    # model_checkpoint_acc = ModelCheckpoint(best_acc_model,
+    #                                        monitor='val_acc',
+    #                                        save_best_only=True,
+    #                                        save_weights_only=True)
 
-    print("Path to best model from training: " + FLAGS.path_save_best_model + "best_~~~~.h5")
+    print("Path for best models from training: " + FLAGS.path_save_best_model + "~~.h5")
 
-    model.fit([train_set[0], train_set[1], train_set[2]],
-              train_set[3],
-              validation_split=FLAGS.validation_split,
+    model.fit([train_set[0], train_set[1], train_set[2]],train_set[3],
+              validation_data=([val_set[0], val_set[1], val_set[2]], val_set[3]),
+              #validation_split=FLAGS.validation_split,
               epochs=FLAGS.num_epochs,
               batch_size=FLAGS.batch_size,
               shuffle=True,
               callbacks=[early_stopping,
                          model_checkpoint_loss,
-                         model_checkpoint_acc,
+                         # model_checkpoint_acc,
                          logging, csv_logger],
               verbose=1)
-    print("'Best model from training saved: " + NOW_DATETIME + "_best_~~~~.h5")
+    print("'Best model from training saved: "+NOW_DATETIME+"_"+str(model_count) + ".h5")
 
 
-def generate_csv_submission(model, test_set, model_type):
-        # Testing and generating submission csv
-        print("Testing model...")
-        preds = model.predict([test_set[0], test_set[1], test_set[2]],
-                              batch_size=FLAGS.batch_size,
-                              verbose=1)
-        print("Generating preds_"+ NOW_DATETIME + model_type + ".csv ...")
-        submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test_set[3]})
-        submission.to_csv("predictions/preds_"+ NOW_DATETIME + model_type + ".csv", index=False)
+def generate_csv_submission(model, test_set, model_count, model_type="_best_loss"):
+    # Testing and generating submission csv
+    print("Testing model...")
+    preds = model.predict([test_set[0], test_set[1], test_set[2]],
+                          batch_size=FLAGS.batch_size,
+                          verbose=1)
+    print("Generating preds_"+ NOW_DATETIME + str(model_count) + ".csv ...")
+    submission = pd.DataFrame({"is_duplicate": preds.ravel(), "test_id": test_set[3]})
+    submission.to_csv("predictions/preds_"+NOW_DATETIME+"_"+str(model_count)+".csv", index=False)
 
 
 def main():
@@ -235,73 +235,93 @@ def main():
                       FLAGS.embedding_vector_dimension,
                       FLAGS.max_sequence_length)
 
+    # Padding sequence
+    train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
+
     # Load nlp features for train data set.
     print("Reading nlp features...")
     train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
     train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features)
     train_features = numpy.hstack((train_nlp_features, train_non_nlp_features))
 
-    lstm_layer = build_lstm_layer()
-
-    # Specifying model input shape
-    input_sequence_1 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
-    embedded_sequences_1 = embedding_layer(input_sequence_1)
-
-    input_sequence_2 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
-    embedded_sequences_2 = embedding_layer(input_sequence_2)
-
-    features_input = Input(shape=(train_features.shape[1],), dtype="float32")
-
-    # Feeding embedded sequence to LSTM layers
-    lstm_layer_lhs = lstm_layer(embedded_sequences_1)
-    lstm_layer_rhs = lstm_layer(embedded_sequences_2)
-
-    # Build a model
-    model = build_model(lstm_layer_lhs,
-                        lstm_layer_rhs,
-                        input_sequence_1,
-                        input_sequence_2,
-                        features_input)
-
-    # Padding sequence
-    train_data_1, train_data_2 = generate_padded_sequence(
-        question1_list,
-        question2_list,
-        tokenizer)
-
-    # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
-    if FLAGS.model_file_to_load is None:
-        train_set = [train_data_1,train_data_2, train_features, train_labels]
-        train(model, train_set)
-    else:
-        model.load_weights(FLAGS.model_file_to_load)
-
     print("Read test.csv file...")
     # Read test data and do same for test data.
     test = pd.read_csv(FLAGS.raw_test_data)
-    test["question1"] = test["question1"].fillna("").apply(nlp.clean_text)\
+    test["question1"] = test["question1"].fillna("").apply(nlp.clean_text) \
         .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
-    test["question2"] = test["question2"].fillna("").apply(nlp.clean_text)\
+    test["question2"] = test["question2"].fillna("").apply(nlp.clean_text) \
         .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
 
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
     test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
     test_features = numpy.hstack((test_nlp_features, test_non_nlp_features))
 
+    # Padding sequence
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],
                                                         test["question2"],
                                                         tokenizer)
-    test_id = test["test_id"]
-    test_set = [test_data_1, test_data_2, test_features, test_id]
 
-    # Generate csv file for submission with best model
-    if FLAGS.generate_csv_submission_best_model:
-        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_loss.h5")
-        model.load_weights(best_model_path)
-        generate_csv_submission(model, test_set, "_best_loss")
-        best_model_path = os.path.join(FLAGS.path_save_best_model, NOW_DATETIME + "_best_acc.h5")
-        model.load_weights(best_model_path)
-        generate_csv_submission(model, test_set, "_best_acc")
+    skf = StratifiedKFold(n_splits=10, shuffle=True)
+    model_count = 0
+
+    for idx_train, idx_val in skf.split(train_labels, train_labels):
+        print("MODEL:", model_count)
+        data_1_train = train_data_1[idx_train]
+        data_2_train = train_data_2[idx_train]
+        labels_train = train_labels[idx_train]
+        feature_train = train_features[idx_train]
+
+        data_1_val = train_data_1[idx_val]
+        data_2_val = train_data_2[idx_val]
+        labels_val = train_labels[idx_val]
+        feature_val = train_features[idx_val]
+
+        lstm_layer = build_lstm_layer()
+
+        # Specifying model input shape
+        input_sequence_1 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
+        embedded_sequences_1 = embedding_layer(input_sequence_1)
+
+        input_sequence_2 = Input(shape=(FLAGS.max_sequence_length,), dtype="int32")
+        embedded_sequences_2 = embedding_layer(input_sequence_2)
+
+        features_input = Input(shape=(train_features.shape[1],), dtype="float32")
+
+        # Feeding embedded sequence to LSTM layers
+        lstm_layer_lhs = lstm_layer(embedded_sequences_1)
+        lstm_layer_rhs = lstm_layer(embedded_sequences_2)
+
+        # Build a model
+        model = build_model(lstm_layer_lhs,
+                            lstm_layer_rhs,
+                            input_sequence_1,
+                            input_sequence_2,
+                            features_input)
+
+        # Train a model if model_file_to_load flag not specified. "GENERATING MODEL"
+        if FLAGS.model_file_to_load is None:
+            train_set = [data_1_train,data_2_train, feature_train, labels_train]
+            val_set = [data_1_val, data_2_val, feature_val, labels_val]
+            train(model, train_set, val_set, model_count)
+        else:
+            model.load_weights(FLAGS.model_file_to_load)
+
+
+        test_id = test["test_id"]
+        test_set = [test_data_1, test_data_2, test_features, test_id]
+
+        # Generate csv file for submission with best model
+        if FLAGS.generate_csv_submission_best_model:
+            best_model_path = os.path.join(FLAGS.path_save_best_model,
+                                           NOW_DATETIME+"_"+str(model_count)+".h5")
+            model.load_weights(best_model_path)
+            generate_csv_submission(model, test_set, model_count)
+            # best_model_path = os.path.join(FLAGS.path_save_best_model,
+            #                                NOW_DATETIME + "_best_acc.h5")
+            # model.load_weights(best_model_path)
+            # generate_csv_submission(model, test_set, "_best_acc")
+
+        model_count += 1
 
 
 if __name__ == "__main__":
