@@ -77,7 +77,7 @@ def build_graph():
                       dataset["is_duplicate"]), axis=-1):
         for word_q1 in question1.split():
             for word_q2 in question2.split():
-                edge_weight = (1 if is_duplicate else -1) / 2000000.0
+                edge_weight = (1 if is_duplicate else -1)
                 node_a = word_dict[word_q1]
                 node_b = word_dict[word_q2]
 
@@ -121,7 +121,7 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
                 if graph.has_edge(node_a, node_b):
                     feature_weight = feature_weight + graph[node_a][node_b][0]['weight']
                     sign = -1 if feature_weight < 0 else 1
-                    feature_weight = sign * min(abs(feature_weight), 40000000.0)
+                    feature_weight = sign * min(abs(feature_weight), 400000.0)
         max_edge_weight = max(abs(feature_weight), max_edge_weight)
         feature.append(feature_weight)
 
