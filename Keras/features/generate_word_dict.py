@@ -103,7 +103,7 @@ def build_graph():
                 else:
                     graph.add_edge(node_a, node_b, weight=edge_weight)
 
-    print "Maximum edge weight from graph build", max_weight
+    print "Maximum edge weight from graph build:", max_weight
     return graph, set_of_words, word_dict, dataset, freq_dict
 
 
@@ -154,7 +154,7 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
     save_path = os.path.join(FLAGS.save_word_edge_features_path+"edge_feature_"+category+".csv")
     save_dict.to_csv(save_path)
 
-    print("Maximum feature weight from generate feature", max_edge_weight)
+    print "Maximum feature weight from generate feature:", max_edge_weight
 
 
 def preprocess_test_data(set_of_words):
