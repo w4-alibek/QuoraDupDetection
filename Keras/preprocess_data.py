@@ -68,6 +68,7 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
 
 
 def generate_tfxidf_feature(train, word_freq, set_of_words, category):
+    print("Generating TFxIDF feature...")
     tokenized_sentences = np.hstack((train["question1"], train["question2"]))
     tokenized_sentences = [tokenized_sentence.split() for tokenized_sentence in tokenized_sentences]
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
@@ -103,6 +104,8 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
 
 
 def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category):
+
+    print("Generating pos tag feature...")
     feature = []
     feature_col = ["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7",
                    "pos8", "pos9", "pos10", "pos11", "pos12", "pos13", "pos14"]
