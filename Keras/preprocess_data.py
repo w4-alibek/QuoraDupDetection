@@ -11,6 +11,10 @@ from features import nlp
 # Set these flags to generate feature CSV files.
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data are to be stored.")
 tf.flags.DEFINE_string("raw_test_data", None, "Where the raw test data are to be stored.")
+tf.flags.DEFINE_string("raw_preprocessed_train_data", None,
+                       "Where the raw preprocessed train data are to be stored.")
+tf.flags.DEFINE_string("raw_preprocessed_test_data", None,
+                       "Where the raw preprocessed test data are to be stored.")
 tf.flags.DEFINE_string("pos_tagger", None, "Where the pos tagger map located.")
 tf.flags.DEFINE_string("pos_tag_map", None, "Where the pos tag map data located.")
 tf.flags.DEFINE_string("word_frequency", None, "Where the word frequency data located.")
@@ -63,7 +67,7 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
     return idf_values
 
 
-def tfxidf(train, word_freq, set_of_words):
+def generate_tfxidf_feature(train, word_freq, set_of_words, category):
     tokenized_sentences = np.hstack((train["question1"], train["question2"]))
     tokenized_sentences = [tokenized_sentence.split() for tokenized_sentence in tokenized_sentences]
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
@@ -95,24 +99,82 @@ def tfxidf(train, word_freq, set_of_words):
     for index in range(len(feature_col)):
         save_dict[feature_col[index]] = [column[index] for column in feature]
 
-    save_dict.to_csv("./tfidf_feature.csv", index=False)
+    save_dict.to_csv("./tfidf_feature_"+category+".csv", index=False)
 
 
-print("Reading train.csv...")
-train = pd.read_csv(FLAGS.raw_train_data)
-print("Cleaning quesitons...")
-train["question1"] = train["question1"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
-    .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
-train["question2"] = train["question2"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
-    .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category):
+    feature = []
+    feature_col = ["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7",
+                   "pos8", "pos9", "pos10", "pos11", "pos12", "pos13", "pos14"]
 
-print("Reading test.csv...")
-test = pd.read_csv(FLAGS.raw_test_data)
-print("Cleaning quesitons...")
-test["question1"] = test["question1"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
-    .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
-test["question2"] = test["question2"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
-    .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+    list_of_top_7 = []
+
+    for question1, question2 in np.stack((train["question1"], train["question2"]), axis=-1):
+        # Get top 7 words from question1 and question2
+        top_7_words_1 = top_7_words(word_freq, question1.split())
+        top_7_words_2 = top_7_words(word_freq, question2.split())
+
+        list_of_top_7.append((top_7_words_1, top_7_words_2))
+
+        pos_tag_1 = [pos_tagger[str(word)] for word in top_7_words_1]
+        pos_tag_2 = [pos_tagger[str(word)] for word in top_7_words_2]
+
+        feature_weight = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        for index in range(len(pos_tag_1)):
+            feature_weight[index] = pos_tag_map[pos_tag_1[index]] / 25.0000001
+        for index in range(len(pos_tag_2)):
+            feature_weight[7 + index] = pos_tag_map[pos_tag_2[index]] / 25.0000001
+        feature.append(feature_weight)
+
+    save_dict = pd.DataFrame()
+    for index in range(len(feature_col)):
+        save_dict[feature_col[index]] = [column[index] for column in feature]
+
+    save_dict.to_csv("./pos_tag_feature_"+category+".csv", index=False)
+
+
+def preprocess_data(set_of_words):
+    print("Reading train.csv...")
+    train = pd.read_csv(FLAGS.raw_train_data)
+    print("Cleaning train quesitons...")
+    train["question1"] = train["question1"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+    train["question2"] = train["question2"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+
+    print("Reading test.csv...")
+    test = pd.read_csv(FLAGS.raw_test_data)
+    print("Cleaning test quesitons...")
+    test["question1"] = test["question1"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+    test["question2"] = test["question2"].fillna("").apply(lambda x: nlp.clean_text(x, False)) \
+        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+
+    print("Removing rare words from train.csv...")
+    # Remove rare words for data set.
+    train["question1"] = train["question1"].apply(lambda x: remove_rare_words(x, set_of_words))
+    train["question2"] = train["question2"].apply(lambda x: remove_rare_words(x, set_of_words))
+
+    print("Removing rare words from test.csv...")
+    test["question1"] = test["question1"].apply(lambda x: remove_rare_words(x, set_of_words))
+    test["question2"] = test["question2"].apply(lambda x: remove_rare_words(x, set_of_words))
+
+    print("Saving processed data...")
+    # Save preprocessed data.
+    train.to_csv("./preprocessed_train.csv", index=False)
+    test.to_csv("./preprocessed_test.csv", index=False)
+
+    return train, test
+
+
+def read_preprocessed_data():
+    print("Reading preprocessed train.csv...")
+    train = pd.read_csv(FLAGS.raw_train_data)
+    print("Reading preprocessed test.csv...")
+    test = pd.read_csv(FLAGS.raw_test_data)
+
+    return train, test
+
 
 print("Reading pos_tagger_for_top_5000.csv...")
 _pos_tagger = pd.read_csv(FLAGS.pos_tagger)
@@ -134,46 +196,14 @@ set_of_words = [unicode(word, errors='ignore') for word in word_freq["word"]]
 # Generate word frequency map.
 word_freq = pd.Series(word_freq["freq"], index=word_freq["word"]).to_dict()
 
-# Remove rare words for data set.
-train["question1"] = train["question1"].apply(lambda x: remove_rare_words(x, set_of_words))
-train["question2"] = train["question2"].apply(lambda x: remove_rare_words(x, set_of_words))
+if FLAGS.raw_preprocessed_train_data and FLAGS.raw_preprocessed_test_data:
+    train, test = read_preprocessed_data()
+else:
+    train, test = preprocess_data(set_of_words)
 
-test["question1"] = test["question1"].apply(lambda x: remove_rare_words(x, set_of_words))
-test["question2"] = test["question2"].apply(lambda x: remove_rare_words(x, set_of_words))
+# Generate features
+#generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, "train")
+generate_pos_tag_feature(test, pos_tag_map, pos_tagger, word_freq, "test")
 
-
-
-# Save preprocessed data.
-train.to_csv("./preprocessed_train.csv", index=False)
-test.to_csv("./preprocessed_test.csv", index=False)
-
-feature = []
-feature_col = ["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7",
-               "pos8", "pos9", "pos10", "pos11", "pos12", "pos13", "pos14"]
-
-list_of_top_7 = []
-
-for question1, question2 in np.stack((train["question1"], train["question2"]), axis=-1):
-    # Get top 7 words from question1 and question2
-    top_7_words_1 = top_7_words(word_freq, question1.split())
-    top_7_words_2 = top_7_words(word_freq, question2.split())
-
-    list_of_top_7.append((top_7_words_1,top_7_words_2))
-
-    pos_tag_1 = [pos_tagger[str(word)] for word in top_7_words_1]
-    pos_tag_2 = [pos_tagger[str(word)] for word in top_7_words_2]
-
-    feature_weight = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    for index in range(len(pos_tag_1)):
-        feature_weight[index] = pos_tag_map[pos_tag_1[index]]/25.0000001
-    for index in range(len(pos_tag_2)):
-        feature_weight[7 + index] = pos_tag_map[pos_tag_2[index]]/25.0000001
-    feature.append(feature_weight)
-
-save_dict = pd.DataFrame()
-for index in range(len(feature_col)):
-    save_dict[feature_col[index]] = [column[index] for column in feature]
-
-save_dict.to_csv("./pos_tag_feature.csv", index=False)
-
-tfxidf(train, word_freq, set_of_words)
+#generate_tfxidf_feature(train, word_freq, set_of_words, "train")
+generate_tfxidf_feature(test, word_freq, set_of_words, "test")
