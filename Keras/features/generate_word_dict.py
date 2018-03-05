@@ -50,7 +50,7 @@ def create_word_dict():
     print "Number of unique words: ", len(word_freq)
 
     # Get top 2000 words
-    word_freq = word_freq[:2000]
+    word_freq = word_freq[:5000]
 
     # Generate freq dict
     freq_dict = {}
@@ -165,7 +165,7 @@ def generate_feature(graph, word_dict, dataset, word_freq, category):
                    "word8", "word9", "word10", "word11", "word12", "word13", "word14"]
     for index in range(len(feature_col)):
         save_dict[feature_col[index]] = [column[index] for column in feature]
-    save_path = os.path.join(FLAGS.save_word_edge_features_path+"edge_feature_"+category+".csv")
+    save_path = os.path.join(FLAGS.save_word_edge_features_path+"edge_feature_"+category+"_5k.csv")
     save_dict.to_csv(save_path, index=False)
 
     print "Maximum feature weight from generate feature:", max_edge_weight
