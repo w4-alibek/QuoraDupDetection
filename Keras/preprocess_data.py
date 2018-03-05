@@ -109,8 +109,13 @@ def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category
 
     list_of_top_7 = []
 
+    train["question1"] = train["question1"].fillna("")
+    train["question2"] = train["question2"].fillna("")
+
     for question1, question2 in np.stack((train["question1"], train["question2"]), axis=-1):
         # Get top 7 words from question1 and question2
+        if type(question2) is float:
+            print(question2)
         top_7_words_1 = top_7_words(word_freq, question1.split())
         top_7_words_2 = top_7_words(word_freq, question2.split())
 
