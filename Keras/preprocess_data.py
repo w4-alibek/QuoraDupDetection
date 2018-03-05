@@ -169,9 +169,9 @@ def preprocess_data(set_of_words):
 
 def read_preprocessed_data():
     print("Reading preprocessed train.csv...")
-    train = pd.read_csv(FLAGS.raw_train_data)
+    train = pd.read_csv(FLAGS.raw_preprocessed_train_data)
     print("Reading preprocessed test.csv...")
-    test = pd.read_csv(FLAGS.raw_test_data)
+    test = pd.read_csv(FLAGS.raw_preprocessed_test_data)
 
     return train, test
 
