@@ -64,13 +64,16 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
         for sentence in tokenized_sentences:
             contains_token += word in sentence
         idf_values[word] = 1 + math.log(len(tokenized_sentences)/contains_token)
+        print(word, "-Done")
     return idf_values
 
 
 def generate_tfxidf_feature(train, word_freq, set_of_words, category):
     print("Generating TFxIDF feature "+category+"...")
     tokenized_sentences = np.hstack((train["question1"], train["question2"]))
+    print("Tokenizing sentences")
     tokenized_sentences = [tokenized_sentence.split() for tokenized_sentence in tokenized_sentences]
+    print("Calculating inverse_document_frequencies sentences")
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
 
     feature = []
