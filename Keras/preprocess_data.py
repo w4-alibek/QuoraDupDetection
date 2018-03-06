@@ -89,7 +89,6 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
     print("Calculating inverse_document_frequencies sentences")
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
 
-    print(inverse_document_frequencies, idf_1)
     print("Calculating tfidf features")
     feature = []
     feature_col = ["tfidf1", "tfidf2", "tfidf3", "tfidf4", "tfidf5", "tfidf6", "tfidf7",
