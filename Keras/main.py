@@ -14,6 +14,26 @@ python main.py
 --embedding_vector_dimension 300
 --path_save_best_model ~alibek/QuoraDupDetection/Keras/models
 
+--preprocessed=True
+--raw_train_data=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/preprocessed_train.csv
+--raw_train_nlp_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/nlp_features_train_500.csv
+--raw_train_non_nlp_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/non_nlp_features_train.500.csv
+--raw_test_data=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/preprocessed_test.csv
+--raw_test_nlp_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/nlp_features_test_500.csv
+--raw_test_non_nlp_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/non_nlp_features_test.500.csv
+--generate_csv_submission_best_model=True
+--word_embedding_path=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/glove.6B.50d.txt
+--embedding_vector_dimension=50
+--path_save_best_model=/Users/skelter/Desktop/QuoraDupDetection/Keras/models
+
+--raw_test_edge_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/edge_feature_test_5k.csv
+--raw_test_pos_tag_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/pos_tag_feature_test.csv
+--raw_test_tfidf_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/tfidf_feature_test.csv
+
+--raw_train_edge_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/edge_feature_train_5k.csv
+--raw_train_pos_tag_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/pos_tag_feature_train.csv
+--raw_train_tfidf_features=/Users/skelter/Desktop/QuoraDupDetection/Keras/data/tfidf_feature_train.csv
+
 <OPTIONAL FLAGS TO RUN>
 --generate_csv_submission_best_model True
 --early_stopping_patience 50
@@ -58,6 +78,7 @@ tf.flags.DEFINE_integer("embedding_vector_dimension", None, "Word embedding vect
 
 # Training
 tf.flags.DEFINE_bool("remove_stopwords", True, "Remove stop words")
+tf.flags.DEFINE_bool("preprocessed", False, "Whether datasets are preprocessed")
 tf.flags.DEFINE_float("learning_rate", 0.002, "Learning rate")
 tf.flags.DEFINE_float("validation_split", 0.2, "Split train.csv file into train and validation")
 tf.flags.DEFINE_integer("batch_size", 100, "Batch size")
@@ -69,21 +90,36 @@ tf.flags.DEFINE_integer("early_stopping_patience", 5,
 tf.flags.DEFINE_string("early_stopping_option", "val_loss", "Quantity to be monitored")
 tf.flags.DEFINE_string("path_save_best_model", None, "Path to save best model of training")
 tf.flags.DEFINE_string("raw_train_data", None, "Where the raw train data is stored.")
-tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
-tf.flags.DEFINE_string("raw_train_non_nlp_features", None,
-                       "Where the raw train non nlp features is stored")
 tf.flags.DEFINE_string("optimizer", "nadam",
                        "Optimization method. One of 'adadelta', 'adam', nadam"
                        "'adamax', 'sgd', 'adagrad', 'rmsprop'")
 
+# Train features
+tf.flags.DEFINE_string("raw_train_nlp_features", None, "Where the raw train nlp features is stored")
+tf.flags.DEFINE_string("raw_train_non_nlp_features", None,
+                       "Where the raw train non nlp features is stored")
+tf.flags.DEFINE_string("raw_train_edge_features", None,
+                       "Where the raw train edge features is stored.")
+tf.flags.DEFINE_string("raw_train_pos_tag_features", None,
+                       "Where the raw train POS tag features is stored.")
+tf.flags.DEFINE_string("raw_train_tfidf_features", None,
+                       "Where the raw train TFxIDF features is stored.")
 
 # Testing
 tf.flags.DEFINE_string("raw_test_data", None, "Where the raw test data is stored.")
+tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
+                     "Generate csv submission file base on last model.")
+
+# Test features
 tf.flags.DEFINE_string("raw_test_nlp_features", None, "Where the raw test nlp features is stored.")
 tf.flags.DEFINE_string("raw_test_non_nlp_features", None,
                        "Where the raw test non nlp features is stored.")
-tf.flags.DEFINE_bool("generate_csv_submission_best_model", False,
-                     "Generate csv submission file base on last model.")
+tf.flags.DEFINE_string("raw_test_edge_features", None,
+                       "Where the raw test edge features is stored.")
+tf.flags.DEFINE_string("raw_test_pos_tag_features", None,
+                       "Where the raw test POS tag features is stored.")
+tf.flags.DEFINE_string("raw_test_tfidf_features", None,
+                       "Where the raw test TFxIDF features is stored.")
 
 # LSTM model
 tf.flags.DEFINE_integer("lstm_out_dimension", 50,
@@ -233,28 +269,53 @@ def main():
         .process_data(FLAGS.word_embedding_path,
                       FLAGS.raw_train_data,
                       FLAGS.embedding_vector_dimension,
-                      FLAGS.max_sequence_length)
+                      FLAGS.max_sequence_length,
+                      FLAGS.preprocessed)
 
     # Padding sequence
     train_data_1, train_data_2 = generate_padded_sequence(question1_list, question2_list, tokenizer)
 
     # Load nlp features for train data set.
-    print("Reading nlp features...")
+    print("Reading nlp features(train)...")
     train_nlp_features = pd.read_csv(FLAGS.raw_train_nlp_features)
     train_non_nlp_features = pd.read_csv(FLAGS.raw_train_non_nlp_features)
-    train_features = numpy.hstack((train_nlp_features, train_non_nlp_features))
+    train_edge_features = pd.read_csv(FLAGS.raw_train_edge_features)
+    train_pos_tag_features = pd.read_csv(FLAGS.raw_train_pos_tag_features)
+    train_tfidf_features = pd.read_csv(FLAGS.raw_train_tfidf_features)
+    train_features = numpy.hstack((train_nlp_features,
+                                   train_non_nlp_features,
+                                   train_edge_features,
+                                   train_pos_tag_features,
+                                   train_tfidf_features))
+
 
     print("Read test.csv file...")
     # Read test data and do same for test data.
     test = pd.read_csv(FLAGS.raw_test_data)
-    test["question1"] = test["question1"].fillna("").apply(nlp.clean_text) \
-        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
-    test["question2"] = test["question2"].fillna("").apply(nlp.clean_text) \
-        .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
 
+    if FLAGS.preprocessed:
+        test["question1"] = test["question1"].fillna("")
+        test["question2"] = test["question2"].fillna("")
+    else:
+        # Preprocess test data as train data.
+        print("Preprocess test.csv file...")
+        test["question1"] = test["question1"].fillna("").apply(nlp.clean_text) \
+            .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+        test["question2"] = test["question2"].fillna("").apply(nlp.clean_text) \
+            .apply(nlp.remove_stop_words).apply(nlp.word_net_lemmatize)
+
+    # Load nlp features for test data set.
+    print ("Reading nlp features(test)...")
     test_nlp_features = pd.read_csv(FLAGS.raw_test_nlp_features)
     test_non_nlp_features = pd.read_csv(FLAGS.raw_test_non_nlp_features)
-    test_features = numpy.hstack((test_nlp_features, test_non_nlp_features))
+    test_edge_features = pd.read_csv(FLAGS.raw_test_edge_features)
+    test_pos_tag_features = pd.read_csv(FLAGS.raw_test_pos_tag_features)
+    test_tfidf_features = pd.read_csv(FLAGS.raw_test_tfidf_features)
+    test_features = numpy.hstack((test_nlp_features,
+                                  test_non_nlp_features,
+                                  test_edge_features,
+                                  test_pos_tag_features,
+                                  test_tfidf_features))
 
     # Padding sequence
     test_data_1, test_data_2 = generate_padded_sequence(test["question1"],

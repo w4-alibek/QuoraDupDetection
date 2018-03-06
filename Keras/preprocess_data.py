@@ -68,7 +68,7 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
 
 
 def generate_tfxidf_feature(train, word_freq, set_of_words, category):
-    print("Generating TFxIDF feature...")
+    print("Generating TFxIDF feature "+category+"...")
     tokenized_sentences = np.hstack((train["question1"], train["question2"]))
     tokenized_sentences = [tokenized_sentence.split() for tokenized_sentence in tokenized_sentences]
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
@@ -105,7 +105,7 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
 
 def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category):
 
-    print("Generating pos tag feature...")
+    print("Generating pos tag feature"+category+"...")
     feature = []
     feature_col = ["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7",
                    "pos8", "pos9", "pos10", "pos11", "pos12", "pos13", "pos14"]
@@ -117,8 +117,6 @@ def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category
 
     for question1, question2 in np.stack((train["question1"], train["question2"]), axis=-1):
         # Get top 7 words from question1 and question2
-        if type(question2) is float:
-            print(question2)
         top_7_words_1 = top_7_words(word_freq, question1.split())
         top_7_words_2 = top_7_words(word_freq, question2.split())
 
@@ -210,8 +208,8 @@ else:
     train, test = preprocess_data(set_of_words)
 
 # Generate features
-#generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, "train")
+generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, "train")
 generate_pos_tag_feature(test, pos_tag_map, pos_tagger, word_freq, "test")
 
-#generate_tfxidf_feature(train, word_freq, set_of_words, "train")
+generate_tfxidf_feature(train, word_freq, set_of_words, "train")
 generate_tfxidf_feature(test, word_freq, set_of_words, "test")
