@@ -59,12 +59,25 @@ def _subliner_term_frequency(word, tokenized_words):
 def _inverse_document_frequencies(tokenized_sentences, set_of_words):
     idf_values = {}
     # set_of_words = set([word for sentence in tokenized_sentences for word in sentence])
+    sentence_word_count = {}
+    step = 0
+    for sentence in tokenized_sentences:
+        map_word = {}
+        for word in sentence:
+            if (word in map_word) is False:
+                map_word[word] = 1
+                if word in sentence_word_count:
+                    sentence_word_count[word] = sentence_word_count[word] + 1
+                else:
+                    sentence_word_count[word] = 1
+
+        step = step + 1
+        if step % 50000 == 0:
+            print("Step: " + str(step))
+
     for word in set_of_words:
-        contains_token = 0.00001
-        for sentence in tokenized_sentences:
-            contains_token += word in sentence
+        contains_token = sentence_word_count[word] if word in sentence_word_count else 0.00001
         idf_values[word] = 1 + math.log(len(tokenized_sentences)/contains_token)
-        print(word, "-Done")
     return idf_values
 
 
@@ -100,7 +113,7 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
         feature.append(feature_weight)
 
         if len(feature) % 50000 == 0:
-            print("Step: " + len(feature))
+            print("Step: " + str(len(feature)))
 
     save_dict = pd.DataFrame()
     for index in range(len(feature_col)):
