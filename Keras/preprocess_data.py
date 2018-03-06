@@ -62,12 +62,12 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
     sentence_word_count = {}
     step = 0
     for sentence in tokenized_sentences:
-        map_word = {}
+        existed_words = set([])
         for word in sentence:
-            if (word in map_word) is False:
-                map_word[word] = 1
+            if (word in existed_words) is False:
+                existed_words.add(word)
                 if word in sentence_word_count:
-                    sentence_word_count[word] = sentence_word_count[word] + 1
+                    sentence_word_count[word] += 1
                 else:
                     sentence_word_count[word] = 1
 
@@ -76,7 +76,7 @@ def _inverse_document_frequencies(tokenized_sentences, set_of_words):
             print("Step: " + str(step))
 
     for word in set_of_words:
-        contains_token = sentence_word_count[word] if word in sentence_word_count else 0.00001
+        contains_token = (0.00001 + sentence_word_count[word]) if word in sentence_word_count else 0.00001
         idf_values[word] = 1 + math.log(len(tokenized_sentences)/contains_token)
     return idf_values
 
@@ -88,7 +88,10 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
     tokenized_sentences = [tokenized_sentence.split() for tokenized_sentence in tokenized_sentences]
     print("Calculating inverse_document_frequencies sentences")
     inverse_document_frequencies = _inverse_document_frequencies(tokenized_sentences, set_of_words)
+    idf_1 = _inverse_document_frequencies1(tokenized_sentences, set_of_words)
 
+    print(inverse_document_frequencies, idf_1)
+    print("Calculating tfidf features")
     feature = []
     feature_col = ["tfidf1", "tfidf2", "tfidf3", "tfidf4", "tfidf5", "tfidf6", "tfidf7",
                    "tfidf8", "tfidf9", "tfidf10", "tfidf11", "tfidf12", "tfidf13", "tfidf14"]
