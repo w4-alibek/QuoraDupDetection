@@ -108,7 +108,7 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
 
 def generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, category):
 
-    print("Generating pos tag feature"+category+"...")
+    print("Generating pos tag feature "+category+"...")
     feature = []
     feature_col = ["pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7",
                    "pos8", "pos9", "pos10", "pos11", "pos12", "pos13", "pos14"]
@@ -211,8 +211,8 @@ else:
     train, test = preprocess_data(set_of_words)
 
 # Generate features
-generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, "train")
-generate_pos_tag_feature(test, pos_tag_map, pos_tagger, word_freq, "test")
-
-generate_tfxidf_feature(train, word_freq, set_of_words, "train")
+# generate_pos_tag_feature(train, pos_tag_map, pos_tagger, word_freq, "train")
+# generate_pos_tag_feature(test, pos_tag_map, pos_tagger, word_freq, "test")
+#
+# generate_tfxidf_feature(train, word_freq, set_of_words, "train")
 generate_tfxidf_feature(test, word_freq, set_of_words, "test")
