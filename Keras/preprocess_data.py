@@ -179,8 +179,13 @@ def preprocess_data(set_of_words):
 def read_preprocessed_data():
     print("Reading preprocessed train.csv...")
     train = pd.read_csv(FLAGS.raw_preprocessed_train_data)
+    train["question1"] = train["question1"].fillna("")
+    train["question2"] = train["question2"].fillna("")
+
     print("Reading preprocessed test.csv...")
     test = pd.read_csv(FLAGS.raw_preprocessed_test_data)
+    test["question1"] = test["question1"].fillna("")
+    test["question2"] = test["question2"].fillna("")
 
     return train, test
 
