@@ -81,6 +81,7 @@ tf.flags.DEFINE_bool("remove_stopwords", True, "Remove stop words")
 tf.flags.DEFINE_bool("preprocessed", False, "Whether datasets are preprocessed")
 tf.flags.DEFINE_float("learning_rate", 0.002, "Learning rate")
 tf.flags.DEFINE_float("validation_split", 0.2, "Split train.csv file into train and validation")
+tf.flags.DEFINE_integer("num_folds", 1, "Number of folds to train")
 tf.flags.DEFINE_integer("batch_size", 100, "Batch size")
 tf.flags.DEFINE_integer("max_sequence_length", 100, "Maximum length of question length")
 tf.flags.DEFINE_integer("num_epochs", 20, "Number of epochs")
@@ -322,7 +323,7 @@ def main():
                                                         test["question2"],
                                                         tokenizer)
 
-    skf = StratifiedKFold(n_splits=10, shuffle=True)
+    skf = StratifiedKFold(n_splits=FLAGS.num_folds, shuffle=True)
     model_count = 0
 
     for idx_train, idx_val in skf.split(train_labels, train_labels):

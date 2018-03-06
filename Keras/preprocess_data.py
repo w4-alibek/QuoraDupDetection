@@ -96,6 +96,9 @@ def generate_tfxidf_feature(train, word_freq, set_of_words, category):
             feature_weight[7+index] = (subliner_term_frequency * inverse_document_frequencies[word])
         feature.append(feature_weight)
 
+        if len(feature) % 50000 == 0:
+            print("Step: " + len(feature))
+
     save_dict = pd.DataFrame()
     for index in range(len(feature_col)):
         save_dict[feature_col[index]] = [column[index] for column in feature]
